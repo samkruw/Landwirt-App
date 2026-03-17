@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LandwirtApp – Schweizer Edition</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<!-- ═══════════════════════════════════════════════════════════
+     FIREBASE CONFIG – ersetze mit deinen eigenen Werten
+     Firestore-Regeln: auth != null
+  ═══════════════════════════════════════════════════════════ -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, doc, setDoc, getDocs, deleteDoc, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// ── KONFIGURATION ────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyDXrzMj_DWzt8nY00DuKUo9IeMSBhcjjiE",
+  authDomain: "landwirt-app.firebaseapp.com",
+  projectId: "landwirt-app",
+  storageBucket: "landwirt-app.firebasestorage.app",
+  messagingSenderId: "1001271736667",
+  appId: "1:1001271736667:web:9543d71108c43f2ecdc27e"
+};
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+// ── GLOBALE HELFER (erreichbar aus normalen <script>-Blöcken) ─
+window._auth = auth;
+window._db   = db;
+window._col  = (path) => collection(db, path);
+window._doc  = (path, id) => doc(db, path, id);
+window._set  = setDoc;
+window._getDocs = getDocs;
+window._del  = deleteDoc;
+window._ts   = serverTimestamp;
+window._signIn  = (e, p) => signInWithEmailAndPassword(auth, e, p);
+window._signOut = () => signOut(auth);
+
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    window._uid = user.uid;
+    window._userEmail = user.email;
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app-shell').style.display   = 'flex';
+    document.getElementById('user-email-label').textContent = user.email;
+    APP.loadTab('uebersicht');
+  } else {
+    window._uid = null;
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('app-shell').style.display   = 'none';
+  }
+});
+</script>
+
+<style>
+/* ═══════════════════════════ RESET & BASE ═══════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --green-900: #173404; --green-800: #27500A; --green-700: #3B6D11;
+  --green-600: #639922; --green-500: #97C459; --green-200: #C0DD97; --green-50: #EAF3DE;
+  --amber-600: #BA7517; --amber-200: #FAC775; --amber-50: #FAEEDA;
+  --red-600: #A32D2D; --red-50: #FCEBEB;
+  --blue-700: #185FA5; --blue-50: #E6F1FB;
+  --gray-900: #1a1a18; --gray-800: #2C2C2A; --gray-600: #5F5E5A;
+  --gray-400: #888780; --gray-200: #D3D1C7; --gray-50: #F1EFE8;
+  --bg: #F7F6F0; --surface: #FFFFFF; --border: rgba(0,0,0,0.08);
+  --text: #1a1a18; --text-muted: #5F5E5A; --text-hint: #888780;
+  --radius: 10px; --radius-lg: 14px;
+  --font: 'DM Sans', system-ui, sans-serif;
+  --mono: 'DM Mono', monospace;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+}
+
+body { font-family: var(--font); background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; min-height: 100vh; }
+
+/* ═══════════════════════════ AUTH SCREEN ════════════════════════════ */
+#auth-screen {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100vh; background: linear-gradient(135deg, var(--green-800) 0%, var(--green-700) 50%, var(--green-600) 100%);
+}
+.auth-card {
+  background: var(--surface); border-radius: 20px; padding: 40px 36px;
+  width: 360px; box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+}
+.auth-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
+.auth-logo-icon {
+  width: 40px; height: 40px; background: var(--green-700); border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+}
+.auth-logo-icon svg { width: 22px; height: 22px; fill: white; }
+.auth-logo-text { font-size: 18px; font-weight: 600; color: var(--text); }
+.auth-logo-sub { font-size: 12px; color: var(--text-muted); }
+.auth-title { font-size: 22px; font-weight: 600; margin-bottom: 6px; }
+.auth-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; }
+.form-group { margin-bottom: 14px; }
+.form-label { font-size: 12px; font-weight: 500; color: var(--text-muted); margin-bottom: 5px; display: block; }
+.form-input {
+  width: 100%; padding: 10px 12px; border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius); font-family: var(--font); font-size: 14px;
+  background: var(--bg); color: var(--text); transition: border-color 0.15s;
+}
+.form-input:focus { outline: none; border-color: var(--green-600); background: white; }
+.btn-primary {
+  width: 100%; padding: 11px; background: var(--green-700); color: white;
+  border: none; border-radius: var(--radius); font-family: var(--font);
+  font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.15s;
+  margin-top: 8px;
+}
+.btn-primary:hover { background: var(--green-800); }
+.auth-error { color: var(--red-600); font-size: 12px; margin-top: 8px; display: none; }
+.auth-demo { font-size: 12px; color: var(--text-hint); margin-top: 14px; text-align: center; }
+
+/* ═══════════════════════════ APP SHELL ══════════════════════════════ */
+#app-shell { display: none; flex-direction: row; min-height: 100vh; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: 220px; min-height: 100vh; background: var(--surface);
+  border-right: 1px solid var(--border); display: flex; flex-direction: column;
+  position: sticky; top: 0; flex-shrink: 0;
+}
+.sidebar-logo {
+  padding: 18px 16px 14px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+}
+.s-logo-icon {
+  width: 32px; height: 32px; background: var(--green-700); border-radius: 8px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.s-logo-icon svg { width: 18px; height: 18px; fill: white; }
+.s-logo-text { font-size: 14px; font-weight: 600; line-height: 1.2; }
+.s-logo-sub { font-size: 10px; color: var(--text-muted); }
+nav { flex: 1; padding: 10px 8px; overflow-y: auto; }
+.nav-section { font-size: 10px; font-weight: 600; color: var(--text-hint); letter-spacing: 0.08em; text-transform: uppercase; padding: 10px 8px 4px; }
+.nav-item {
+  display: flex; align-items: center; gap: 9px; padding: 8px 10px;
+  border-radius: var(--radius); cursor: pointer; font-size: 13px;
+  color: var(--text-muted); transition: all 0.12s; margin-bottom: 1px;
+  user-select: none;
+}
+.nav-item:hover { background: var(--gray-50); color: var(--text); }
+.nav-item.active { background: var(--green-50); color: var(--green-700); font-weight: 500; }
+.nav-item svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.8; flex-shrink: 0; }
+.nav-badge {
+  margin-left: auto; background: var(--amber-50); color: var(--amber-600);
+  font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 20px;
+}
+.sidebar-footer {
+  padding: 12px 14px; border-top: 1px solid var(--border);
+}
+.user-info { display: flex; align-items: center; gap: 9px; }
+.user-avatar {
+  width: 30px; height: 30px; border-radius: 50%; background: var(--green-50);
+  border: 1.5px solid var(--green-200); display: flex; align-items: center;
+  justify-content: center; font-size: 11px; font-weight: 600; color: var(--green-700);
+  flex-shrink: 0;
+}
+.user-name { font-size: 12px; font-weight: 500; }
+#user-email-label { font-size: 10px; color: var(--text-muted); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px; }
+.btn-logout {
+  display: flex; align-items: center; gap: 5px; margin-top: 8px;
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 5px 10px; font-size: 11px; color: var(--text-muted); cursor: pointer;
+  width: 100%; transition: all 0.12s;
+}
+.btn-logout:hover { background: var(--red-50); color: var(--red-600); border-color: var(--red-600); }
+
+/* ── MAIN CONTENT ── */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.topbar {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 14px 24px; display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 10;
+}
+.topbar-title { font-size: 16px; font-weight: 600; }
+.topbar-right { display: flex; align-items: center; gap: 8px; }
+.chip { font-size: 11px; padding: 4px 10px; border-radius: 20px; font-weight: 500; }
+.chip-green { background: var(--green-50); color: var(--green-700); }
+.chip-amber { background: var(--amber-50); color: var(--amber-600); }
+.chip-blue  { background: var(--blue-50);  color: var(--blue-700); }
+
+.content-area { flex: 1; overflow-y: auto; padding: 20px 24px; }
+
+/* ═══════════════════════════ GEMEINSAME KOMPONENTEN ═════════════════ */
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.section-title { font-size: 15px; font-weight: 600; }
+.btn-add {
+  display: flex; align-items: center; gap: 6px; padding: 7px 14px;
+  background: var(--green-700); color: white; border: none; border-radius: var(--radius);
+  font-family: var(--font); font-size: 12px; font-weight: 500; cursor: pointer;
+  transition: background 0.12s;
+}
+.btn-add:hover { background: var(--green-800); }
+.btn-secondary {
+  padding: 7px 14px; background: var(--surface); color: var(--text);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  font-family: var(--font); font-size: 12px; cursor: pointer; transition: all 0.12s;
+}
+.btn-secondary:hover { background: var(--gray-50); }
+.btn-danger {
+  padding: 5px 10px; background: none; color: var(--red-600);
+  border: 1px solid var(--red-600); border-radius: 6px;
+  font-family: var(--font); font-size: 11px; cursor: pointer; transition: all 0.12s;
+}
+.btn-danger:hover { background: var(--red-50); }
+
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 18px 20px;
+  box-shadow: var(--shadow);
+}
+.metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; margin-bottom: 20px; }
+.metric-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 16px 18px; box-shadow: var(--shadow);
+}
+.metric-label { font-size: 11px; color: var(--text-muted); font-weight: 500; margin-bottom: 4px; }
+.metric-value { font-size: 26px; font-weight: 600; line-height: 1; margin-bottom: 4px; }
+.metric-sub { font-size: 11px; color: var(--text-muted); }
+.metric-up   { color: var(--green-700); }
+.metric-down { color: var(--red-600); }
+
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th {
+  text-align: left; font-size: 11px; font-weight: 600; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.06em; padding: 10px 14px;
+  border-bottom: 1px solid var(--border); background: var(--gray-50);
+}
+.data-table td { padding: 11px 14px; border-bottom: 1px solid var(--border); font-size: 13px; }
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: var(--gray-50); }
+.data-table th:first-child, .data-table td:first-child { border-radius: 0; }
+
+.status-badge {
+  display: inline-block; padding: 2px 8px; border-radius: 20px;
+  font-size: 10px; font-weight: 600;
+}
+.st-ok   { background: var(--green-50); color: var(--green-700); }
+.st-warn { background: var(--amber-50); color: var(--amber-600); }
+.st-err  { background: var(--red-50);   color: var(--red-600); }
+.st-info { background: var(--blue-50);  color: var(--blue-700); }
+
+/* ── MODAL ── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35);
+  z-index: 100; align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: var(--surface); border-radius: var(--radius-lg); padding: 24px 26px;
+  width: 480px; max-width: 95vw; max-height: 85vh; overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+}
+.modal-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+.modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-group { margin-bottom: 12px; }
+.form-label { font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block; }
+.form-input, .form-select, .form-textarea {
+  width: 100%; padding: 8px 10px; border: 1px solid var(--gray-200);
+  border-radius: var(--radius); font-family: var(--font); font-size: 13px;
+  background: var(--bg); color: var(--text); transition: border-color 0.12s;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  outline: none; border-color: var(--green-600); background: white;
+}
+.form-textarea { resize: vertical; min-height: 70px; }
+
+/* ══════════ ÜBERSICHT ══════════ */
+#tab-uebersicht .grid2 { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; margin-bottom: 16px; }
+#tab-uebersicht .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.progress-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.progress-name { font-size: 12px; flex: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.progress-bar-wrap { flex: 2; height: 6px; background: var(--gray-50); border-radius: 4px; overflow: hidden; border: 1px solid var(--border); }
+.progress-fill { height: 100%; border-radius: 4px; transition: width 0.4s; }
+.progress-val { font-size: 11px; color: var(--text-muted); min-width: 36px; text-align: right; font-family: var(--mono); }
+.weather-days { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 12px; }
+.w-day-card {
+  background: var(--gray-50); border-radius: var(--radius); padding: 10px 8px; text-align: center;
+  border: 1px solid var(--border);
+}
+.w-day-card.today { border-color: var(--green-200); background: var(--green-50); }
+.w-day-label { font-size: 10px; color: var(--text-muted); margin-bottom: 4px; }
+.w-icon { font-size: 22px; line-height: 1; margin-bottom: 4px; }
+.w-temp { font-size: 14px; font-weight: 600; }
+.w-prec { font-size: 10px; color: var(--text-muted); }
+.alert-list { display: flex; flex-direction: column; gap: 7px; }
+.alert-item {
+  display: flex; align-items: flex-start; gap: 9px; padding: 9px 11px;
+  border-radius: var(--radius); border: 1px solid transparent;
+}
+.alert-ok   { background: var(--green-50); border-color: var(--green-200); }
+.alert-warn { background: var(--amber-50); border-color: var(--amber-200); }
+.alert-err  { background: var(--red-50); border-color: #F7C1C1; }
+.alert-info { background: var(--blue-50);  border-color: #B5D4F4; }
+.alert-dot { width: 7px; height: 7px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+.dot-ok   { background: var(--green-600); }
+.dot-warn { background: var(--amber-600); }
+.dot-err  { background: var(--red-600); }
+.dot-info { background: var(--blue-700); }
+.alert-text { font-size: 12px; flex: 1; line-height: 1.4; }
+.alert-time { font-size: 10px; color: var(--text-hint); margin-top: 1px; }
+.recommend-box {
+  margin-top: 10px; background: var(--amber-50); border: 1px solid var(--amber-200);
+  border-radius: var(--radius); padding: 9px 11px;
+}
+.recommend-label { font-size: 10px; font-weight: 600; color: var(--amber-600); margin-bottom: 2px; }
+.recommend-text { font-size: 12px; color: var(--text); }
+
+/* ══════════ LOADING ══════════ */
+.loading-state { text-align: center; padding: 40px; color: var(--text-muted); font-size: 13px; }
+.loading-spinner {
+  width: 28px; height: 28px; border: 3px solid var(--green-200);
+  border-top-color: var(--green-700); border-radius: 50%;
+  animation: spin 0.8s linear infinite; margin: 0 auto 10px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ══════════ RESPONSIVE ══════════ */
+@media (max-width: 768px) {
+  .sidebar { width: 56px; }
+  .s-logo-text, .s-logo-sub, .nav-item span, .user-name, #user-email-label, .nav-section, .nav-badge { display: none; }
+  .nav-item { justify-content: center; padding: 10px; }
+  .nav-item svg { margin: 0; }
+  .sidebar-logo { justify-content: center; padding: 14px 8px; }
+  .metric-grid { grid-template-columns: 1fr 1fr; }
+  #tab-uebersicht .grid2 { grid-template-columns: 1fr; }
+  #tab-uebersicht .grid3 { grid-template-columns: 1fr; }
+  .content-area { padding: 14px 14px; }
+  .topbar { padding: 12px 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ AUTH SCREEN ═══════════════════════════ -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 3L4 10h3v11h10V10h3L12 3z"/></svg>
+      </div>
+      <div>
+        <div class="auth-logo-text">LandwirtApp</div>
+        <div class="auth-logo-sub">Schweizer Edition</div>
+      </div>
+    </div>
+    <div class="auth-title">Willkommen zurück</div>
+    <div class="auth-sub">Melden Sie sich mit Ihrem Konto an</div>
+    <div class="form-group">
+      <label class="form-label" for="login-email">E-Mail</label>
+      <input class="form-input" id="login-email" type="email" placeholder="name@betrieb.ch" autocomplete="email">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="login-pw">Passwort</label>
+      <input class="form-input" id="login-pw" type="password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="btn-primary" onclick="AUTH.login()">Anmelden</button>
+    <div id="auth-error" class="auth-error"></div>
+    <div class="auth-demo">Demo: demo@landwirt.ch / demo1234 (Firebase konfigurieren)</div>
+  </div>
+</div>
+
+<!-- ═══════════════════ APP SHELL ═══════════════════════════════ -->
+<div id="app-shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="s-logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 3L4 10h3v11h10V10h3L12 3z"/></svg>
+      </div>
+      <div>
+        <div class="s-logo-text">LandwirtApp</div>
+        <div class="s-logo-sub">Schweizer Edition</div>
+      </div>
+    </div>
+    <nav>
+      <div class="nav-section">Hauptmenü</div>
+      <div class="nav-item active" onclick="APP.loadTab('uebersicht')" data-tab="uebersicht">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        <span>Übersicht</span>
+      </div>
+      <div class="nav-item" onclick="APP.loadTab('felder')" data-tab="felder">
+        <svg viewBox="0 0 24 24"><path d="M3 18L9 6l6 7 3-4 3 9H3z"/></svg>
+        <span>Felder</span>
+      </div>
+      <div class="nav-item" onclick="APP.loadTab('tiere')" data-tab="tiere">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        <span>Tiere</span>
+      </div>
+      <div class="nav-item" onclick="APP.loadTab('maschinen')" data-tab="maschinen">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M18.4 5.6l-1.4 1.4M5.6 18.4l-1.4 1.4"/></svg>
+        <span>Maschinen</span>
+      </div>
+      <div class="nav-section">Geschäft</div>
+      <div class="nav-item" onclick="APP.loadTab('produkte')" data-tab="produkte">
+        <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14h18V6l-3-4H6z"/><path d="M3 6h18M16 10a4 4 0 01-8 0"/></svg>
+        <span>Marktplatz</span>
+        <span class="nav-badge" id="badge-produkte" style="display:none"></span>
+      </div>
+      <div class="nav-item" onclick="APP.loadTab('berichte')" data-tab="berichte">
+        <svg viewBox="0 0 24 24"><path d="M3 3h18v18H3z" rx="2"/><path d="M8 17V13M12 17V9M16 17V13"/></svg>
+        <span>Berichte</span>
+      </div>
+      <div class="nav-item" onclick="APP.loadTab('beratung')" data-tab="beratung">
+        <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        <span>Beratung</span>
+      </div>
+      <div class="nav-item" onclick="APP.loadTab('einstellungen')" data-tab="einstellungen">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        <span>Einstellungen</span>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar" id="user-avatar">HM</div>
+        <div>
+          <div class="user-name" id="user-name-label">Betrieb</div>
+          <span id="user-email-label">–</span>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="AUTH.logout()">
+        <svg width="12" height="12" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        Abmelden
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="topbar-title">Übersicht</div>
+      <div class="topbar-right">
+        <span class="chip chip-green" id="topbar-date"></span>
+        <span class="chip chip-amber" id="topbar-alerts" style="display:none"></span>
+      </div>
+    </div>
+    <div class="content-area" id="content-area">
+      <div class="loading-state"><div class="loading-spinner"></div>Laden…</div>
+    </div>
+  </main>
+
+</div><!-- /app-shell -->
+
+<!-- ═══════════════════ MODAL ═══════════════════════════════════ -->
+<div class="modal-overlay" id="modal-overlay" onclick="MODAL.close(event)">
+  <div class="modal-box" id="modal-box">
+    <div class="modal-title" id="modal-title"></div>
+    <div id="modal-body"></div>
+    <div class="modal-footer" id="modal-footer"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════ JAVASCRIPT ══════════════════════════════ -->
+<script>
+/* ──────────────── UTILS ──────────────── */
+const fmt = {
+  date: (d) => d ? new Date(d).toLocaleDateString('de-CH') : '–',
+  chf:  (n) => 'CHF ' + Number(n||0).toLocaleString('de-CH', {minimumFractionDigits:2, maximumFractionDigits:2}),
+  ha:   (n) => Number(n||0).toLocaleString('de-CH') + ' ha',
+};
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ──────────────── AUTH MODULE ──────────────── */
+const AUTH = {
+  async login() {
+    const email = document.getElementById('login-email').value.trim();
+    const pw    = document.getElementById('login-pw').value;
+    const errEl = document.getElementById('auth-error');
+    errEl.style.display = 'none';
+    try {
+      await window._signIn(email, pw);
+    } catch(e) {
+      errEl.style.display = 'block';
+      errEl.textContent = 'Anmeldung fehlgeschlagen: ' + (e.code === 'auth/invalid-credential' ? 'E-Mail oder Passwort falsch.' : e.message);
+    }
+  },
+  async logout() {
+    await window._signOut();
+  }
+};
+
+/* Allow Enter-key on login */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('auth-screen').style.display !== 'none') AUTH.login();
+});
+
+/* ──────────────── MODAL MODULE ──────────────── */
+const MODAL = {
+  open(title, bodyHTML, footerHTML) {
+    document.getElementById('modal-title').textContent = title;
+    document.getElementById('modal-body').innerHTML = bodyHTML;
+    document.getElementById('modal-footer').innerHTML = footerHTML ||
+      `<button class="btn-secondary" onclick="MODAL.close()">Abbrechen</button>`;
+    document.getElementById('modal-overlay').classList.add('open');
+  },
+  close(e) {
+    if (!e || e.target === document.getElementById('modal-overlay'))
+      document.getElementById('modal-overlay').classList.remove('open');
+  }
+};
+
+/* ──────────────── APP MODULE ──────────────── */
+const APP = {
+  currentTab: null,
+  tabs: {
+    'uebersicht': { title: 'Übersicht',    render: TAB_UEBERSICHT },
+    'felder':     { title: 'Felder',       render: TAB_FELDER },
+    'tiere':      { title: 'Tiere',        render: TAB_TIERE },
+    'maschinen':  { title: 'Maschinen',    render: TAB_MASCHINEN },
+    'produkte':   { title: 'Marktplatz',   render: TAB_PRODUKTE },
+    'berichte':   { title: 'Berichte',     render: TAB_BERICHTE },
+    'beratung':   { title: 'Beratung',     render: TAB_BERATUNG },
+    'einstellungen': { title: 'Einstellungen', render: TAB_EINSTELLUNGEN },
+  },
+  loadTab(name) {
+    this.currentTab = name;
+    // Update nav
+    document.querySelectorAll('.nav-item').forEach(el => {
+      el.classList.toggle('active', el.dataset.tab === name);
+    });
+    // Update topbar
+    const cfg = this.tabs[name];
+    if (cfg) {
+      document.getElementById('topbar-title').textContent = cfg.title;
+      const area = document.getElementById('content-area');
+      area.innerHTML = '<div class="loading-state"><div class="loading-spinner"></div>Laden…</div>';
+      cfg.render(area);
+    }
+  }
+};
+
+/* Set date in topbar */
+document.getElementById('topbar-date').textContent =
+  new Date().toLocaleDateString('de-CH', {day:'2-digit', month:'long', year:'numeric'});
+
+/* ──────────────── FIRESTORE HELPERS ──────────────── */
+async function fsLoad(subcol) {
+  if (!window._uid) return [];
+  const snap = await window._getDocs(window._col(`benutzer/${window._uid}/${subcol}`));
+  return snap.docs.map(d => ({id: d.id, ...d.data()}));
+}
+async function fsSave(subcol, id, data) {
+  await window._set(window._doc(`benutzer/${window._uid}/${subcol}`, id), {
+    ...data, updatedAt: window._ts()
+  });
+}
+async function fsDel(subcol, id) {
+  await window._del(window._doc(`benutzer/${window._uid}/${subcol}`, id));
+}
+function newId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+/* ═══════════════ TAB: ÜBERSICHT ════════════════════════════════ */
+async function TAB_UEBERSICHT(container) {
+  const [felder, tiere, maschinen, produkte] = await Promise.all([
+    fsLoad('felder'), fsLoad('tiere'), fsLoad('maschinen'), fsLoad('produkte')
+  ]);
+  const warnings = maschinen.filter(m => m.status === 'wartung').length + felder.filter(f => parseInt(f.naehrstoff||100)<65).length;
+  if (warnings > 0) {
+    const el = document.getElementById('topbar-alerts');
+    el.textContent = `${warnings} Warnungen`; el.style.display = '';
+  }
+
+  container.innerHTML = `
+  <div id="tab-uebersicht">
+    <div class="metric-grid">
+      <div class="metric-card">
+        <div class="metric-label">Felder aktiv</div>
+        <div class="metric-value">${felder.length}</div>
+        <div class="metric-sub">${felder.reduce((a,f)=>a+Number(f.groesse||0),0).toFixed(1)} ha gesamt</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Tiere total</div>
+        <div class="metric-value">${tiere.reduce((a,t)=>a+Number(t.anzahl||0),0)}</div>
+        <div class="metric-sub metric-up">${tiere.length} Gruppen</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Produkte im Markt</div>
+        <div class="metric-value">${produkte.length}</div>
+        <div class="metric-sub">${fmt.chf(produkte.reduce((a,p)=>a+(Number(p.preis||0)*Number(p.menge||0)),0))}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Maschinen</div>
+        <div class="metric-value">${maschinen.length}</div>
+        <div class="metric-sub ${maschinen.filter(m=>m.status==='wartung').length>0?'metric-down':'metric-up'}">
+          ${maschinen.filter(m=>m.status==='wartung').length} Wartung fällig
+        </div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <div class="section-header"><span class="section-title">Feldübersicht</span></div>
+        ${felder.length === 0 ? '<p style="font-size:13px;color:var(--text-muted);">Noch keine Felder erfasst.</p>' :
+          felder.map(f => {
+            const pct = Math.min(100, Math.max(0, parseInt(f.naehrstoff||75)));
+            const col = pct >= 75 ? 'var(--green-600)' : pct >= 55 ? 'var(--amber-600)' : 'var(--red-600)';
+            return `<div class="progress-row">
+              <span class="progress-name">${esc(f.name)} (${esc(f.kultur||'–')})</span>
+              <div class="progress-bar-wrap"><div class="progress-fill" style="width:${pct}%;background:${col}"></div></div>
+              <span class="progress-val">${pct}%</span>
+            </div>`;
+          }).join('')}
+      </div>
+      <div class="card">
+        <div class="section-header"><span class="section-title">Wettervorhersage</span></div>
+        <div class="weather-days">
+          <div class="w-day-card today">
+            <div class="w-day-label">Heute</div>
+            <div class="w-icon">⛅</div>
+            <div class="w-temp">8°C</div>
+            <div class="w-prec">2 mm</div>
+          </div>
+          <div class="w-day-card">
+            <div class="w-day-label">Morgen</div>
+            <div class="w-icon">🌧</div>
+            <div class="w-temp">6°C</div>
+            <div class="w-prec">14 mm</div>
+          </div>
+          <div class="w-day-card">
+            <div class="w-day-label">Übermorgen</div>
+            <div class="w-icon">☀️</div>
+            <div class="w-temp">11°C</div>
+            <div class="w-prec">0 mm</div>
+          </div>
+        </div>
+        <div class="recommend-box">
+          <div class="recommend-label">KI-Empfehlung</div>
+          <div class="recommend-text">Düngerausbringung bis Mittwoch verschieben (Regen erwartet)</div>
+        </div>
+      </div>
+    </div>
+    <div class="grid3" style="margin-top:16px">
+      <div class="card">
+        <div class="section-header"><span class="section-title">Tiergesundheit</span></div>
+        ${tiere.length === 0 ? '<p style="font-size:13px;color:var(--text-muted);">Noch keine Tiere erfasst.</p>' :
+          tiere.map(t=>{
+            const h = parseInt(t.gesundheit||90);
+            const col = h>=80?'var(--green-600)':h>=60?'var(--amber-600)':'var(--red-600)';
+            return `<div class="progress-row">
+              <span class="progress-name">${esc(t.art)}</span>
+              <div class="progress-bar-wrap"><div class="progress-fill" style="width:${h}%;background:${col}"></div></div>
+              <span class="progress-val">${h}%</span>
+            </div>`;
+          }).join('')}
+      </div>
+      <div class="card">
+        <div class="section-header"><span class="section-title">Maschinen-Status</span></div>
+        ${maschinen.length === 0 ? '<p style="font-size:13px;color:var(--text-muted);">Noch keine Maschinen erfasst.</p>' :
+          maschinen.slice(0,5).map(m=>`
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">
+            <span style="font-size:12px;flex:1">${esc(m.typ)}</span>
+            <span class="status-badge ${m.status==='ok'?'st-ok':m.status==='wartung'?'st-warn':'st-info'}">${esc(m.status||'ok')}</span>
+          </div>`).join('')}
+      </div>
+      <div class="card">
+        <div class="section-header"><span class="section-title">Benachrichtigungen</span></div>
+        <div class="alert-list">
+          ${warnings === 0 ?
+            `<div class="alert-item alert-ok"><div class="alert-dot dot-ok"></div><div class="alert-text">Alles in Ordnung</div></div>` :
+            `${maschinen.filter(m=>m.status==='wartung').map(m=>`
+              <div class="alert-item alert-warn"><div class="alert-dot dot-warn"></div>
+              <div><div class="alert-text">${esc(m.typ)} – Wartung fällig</div></div></div>`).join('')}
+            ${felder.filter(f=>parseInt(f.naehrstoff||100)<65).map(f=>`
+              <div class="alert-item alert-err"><div class="alert-dot dot-err"></div>
+              <div><div class="alert-text">${esc(f.name)} – Nährstoff niedrig</div></div></div>`).join('')}`
+          }
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ═══════════════ TAB: FELDER ════════════════════════════════ */
+async function TAB_FELDER(container) {
+  const felder = await fsLoad('felder');
+  container.innerHTML = `
+    <div class="section-header">
+      <span class="section-title">Felder verwalten</span>
+      <button class="btn-add" onclick="FELDER.openNew()">+ Neues Feld</button>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="data-table">
+        <thead><tr>
+          <th>Name</th><th>Grösse</th><th>Kultur</th><th>Boden</th><th>Nährstoff</th><th>Bewässerung</th><th>Status</th><th></th>
+        </tr></thead>
+        <tbody>
+          ${felder.length === 0 ? `<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--text-muted)">Noch keine Felder erfasst.</td></tr>` :
+            felder.map(f => {
+              const pct = parseInt(f.naehrstoff||75);
+              const st = pct>=75?'st-ok':pct>=55?'st-warn':'st-err';
+              const stl = pct>=75?'OK':pct>=55?'Mittel':'Niedrig';
+              return `<tr>
+                <td><strong>${esc(f.name)}</strong></td>
+                <td>${fmt.ha(f.groesse)}</td>
+                <td>${esc(f.kultur||'–')}</td>
+                <td>${esc(f.boden||'–')}</td>
+                <td><span class="status-badge ${st}">${pct}% (${stl})</span></td>
+                <td>${esc(f.bewaesserung||'–')}</td>
+                <td><span class="status-badge st-ok">${esc(f.status||'Aktiv')}</span></td>
+                <td><button class="btn-danger" onclick="FELDER.del('${f.id}')">Löschen</button></td>
+              </tr>`;
+            }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+const FELDER = {
+  openNew() {
+    MODAL.open('Neues Feld erfassen', `
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Name *</label><input class="form-input" id="f-name" placeholder="Nordfeld"></div>
+        <div class="form-group"><label class="form-label">Grösse (ha)</label><input class="form-input" id="f-groesse" type="number" step="0.1" placeholder="5.5"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Kulturpflanze</label><input class="form-input" id="f-kultur" placeholder="Weizen, Mais…"></div>
+        <div class="form-group"><label class="form-label">Bodenart</label>
+          <select class="form-select" id="f-boden">
+            <option value="">– wählen –</option>
+            <option>Sandiger Lehm</option><option>Tonboden</option><option>Humus</option><option>Lössboden</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Nährstoff % (0-100)</label><input class="form-input" id="f-naehrstoff" type="number" min="0" max="100" placeholder="75"></div>
+        <div class="form-group"><label class="form-label">Bewässerung</label>
+          <select class="form-select" id="f-bewaesserung">
+            <option value="">– wählen –</option>
+            <option>Tröpfchenbewässerung</option><option>Beregnungsanlage</option><option>Natürlicher Regen</option>
+          </select>
+        </div>
+      </div>`,
+      `<button class="btn-secondary" onclick="MODAL.close()">Abbrechen</button>
+       <button class="btn-add" onclick="FELDER.save()">Speichern</button>`
+    );
+  },
+  async save() {
+    const name = document.getElementById('f-name').value.trim();
+    if (!name) { alert('Name ist erforderlich.'); return; }
+    const id = newId();
+    await fsSave('felder', id, {
+      name, groesse: document.getElementById('f-groesse').value,
+      kultur: document.getElementById('f-kultur').value,
+      boden: document.getElementById('f-boden').value,
+      naehrstoff: document.getElementById('f-naehrstoff').value || 75,
+      bewaesserung: document.getElementById('f-bewaesserung').value,
+      status: 'Aktiv'
+    });
+    MODAL.close(); APP.loadTab('felder');
+  },
+  async del(id) {
+    if (confirm('Feld wirklich löschen?')) { await fsDel('felder', id); APP.loadTab('felder'); }
+  }
+};
+
+/* ═══════════════ TAB: TIERE ════════════════════════════════ */
+async function TAB_TIERE(container) {
+  const tiere = await fsLoad('tiere');
+  container.innerHTML = `
+    <div class="section-header">
+      <span class="section-title">Tierbestand verwalten</span>
+      <button class="btn-add" onclick="TIERE.openNew()">+ Neue Tiergruppe</button>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="data-table">
+        <thead><tr>
+          <th>Tierart</th><th>Anzahl</th><th>Gesundheit</th><th>Futterqualität</th><th>Nächste Impfung</th><th>Notizen</th><th></th>
+        </tr></thead>
+        <tbody>
+          ${tiere.length === 0 ? `<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--text-muted)">Noch keine Tiere erfasst.</td></tr>` :
+            tiere.map(t => {
+              const h = parseInt(t.gesundheit||90);
+              const st = h>=80?'st-ok':h>=60?'st-warn':'st-err';
+              return `<tr>
+                <td><strong>${esc(t.art)}</strong></td>
+                <td>${esc(t.anzahl||'–')}</td>
+                <td><span class="status-badge ${st}">${h}%</span></td>
+                <td><span class="status-badge st-info">${esc(t.futter||'–')}</span></td>
+                <td>${fmt.date(t.impfung)}</td>
+                <td style="color:var(--text-muted);font-size:12px">${esc(t.notizen||'–')}</td>
+                <td><button class="btn-danger" onclick="TIERE.del('${t.id}')">Löschen</button></td>
+              </tr>`;
+            }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+const TIERE = {
+  openNew() {
+    MODAL.open('Neue Tiergruppe', `
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Tierart *</label>
+          <select class="form-select" id="t-art">
+            <option value="">– wählen –</option>
+            <option>Rinder</option><option>Schweine</option><option>Schafe</option><option>Geflügel</option><option>Ziegen</option><option>Pferde</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Anzahl</label><input class="form-input" id="t-anzahl" type="number" placeholder="40"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Gesundheit % (0-100)</label><input class="form-input" id="t-gesundheit" type="number" min="0" max="100" placeholder="90"></div>
+        <div class="form-group"><label class="form-label">Futterqualität</label>
+          <select class="form-select" id="t-futter">
+            <option value="">– wählen –</option><option>Bio</option><option>Standard</option><option>Premium</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Nächste Impfung</label><input class="form-input" id="t-impfung" type="date"></div>
+        <div class="form-group"><label class="form-label">Notizen</label><input class="form-input" id="t-notizen" placeholder="Optional"></div>
+      </div>`,
+      `<button class="btn-secondary" onclick="MODAL.close()">Abbrechen</button>
+       <button class="btn-add" onclick="TIERE.save()">Speichern</button>`
+    );
+  },
+  async save() {
+    const art = document.getElementById('t-art').value;
+    if (!art) { alert('Tierart erforderlich.'); return; }
+    await fsSave('tiere', newId(), {
+      art, anzahl: document.getElementById('t-anzahl').value,
+      gesundheit: document.getElementById('t-gesundheit').value || 90,
+      futter: document.getElementById('t-futter').value,
+      impfung: document.getElementById('t-impfung').value,
+      notizen: document.getElementById('t-notizen').value
+    });
+    MODAL.close(); APP.loadTab('tiere');
+  },
+  async del(id) {
+    if (confirm('Tiergruppe wirklich löschen?')) { await fsDel('tiere', id); APP.loadTab('tiere'); }
+  }
+};
+
+/* ═══════════════ TAB: MASCHINEN ═══════════════════════════════ */
+async function TAB_MASCHINEN(container) {
+  const maschinen = await fsLoad('maschinen');
+  container.innerHTML = `
+    <div class="section-header">
+      <span class="section-title">Maschinen & Geräte</span>
+      <button class="btn-add" onclick="MASCHINEN.openNew()">+ Neue Maschine</button>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="data-table">
+        <thead><tr>
+          <th>Typ</th><th>Marke</th><th>Modell</th><th>Jahr</th><th>Status</th><th>Letzte Wartung</th><th>Nächste Wartung</th><th></th>
+        </tr></thead>
+        <tbody>
+          ${maschinen.length === 0 ? `<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--text-muted)">Noch keine Maschinen erfasst.</td></tr>` :
+            maschinen.map(m => {
+              const stmap = {ok:'st-ok',wartung:'st-warn',reparatur:'st-err',verfuegbar:'st-info'};
+              return `<tr>
+                <td><strong>${esc(m.typ)}</strong></td>
+                <td>${esc(m.marke||'–')}</td>
+                <td>${esc(m.modell||'–')}</td>
+                <td>${esc(m.baujahr||'–')}</td>
+                <td><span class="status-badge ${stmap[m.status]||'st-info'}">${esc(m.status||'ok')}</span></td>
+                <td>${fmt.date(m.wartungLetzt)}</td>
+                <td>${fmt.date(m.wartungNaechst)}</td>
+                <td><button class="btn-danger" onclick="MASCHINEN.del('${m.id}')">Löschen</button></td>
+              </tr>`;
+            }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+const MASCHINEN = {
+  openNew() {
+    MODAL.open('Neue Maschine erfassen', `
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Typ *</label>
+          <select class="form-select" id="m-typ">
+            <option value="">– wählen –</option>
+            <option>Traktor</option><option>Mähdrescher</option><option>Pflug</option><option>Sämaschine</option>
+            <option>Güllefass</option><option>Anhänger</option><option>Ladewagen</option><option>Sonstige</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Marke</label><input class="form-input" id="m-marke" placeholder="Massey Ferguson, John Deere…"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Modell</label><input class="form-input" id="m-modell" placeholder="MF 5710"></div>
+        <div class="form-group"><label class="form-label">Baujahr</label><input class="form-input" id="m-baujahr" type="number" placeholder="2018"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Status</label>
+          <select class="form-select" id="m-status">
+            <option value="ok">OK</option><option value="wartung">Wartung fällig</option>
+            <option value="reparatur">In Reparatur</option><option value="verfuegbar">Verfügbar</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Nächste Wartung</label><input class="form-input" id="m-wartung" type="date"></div>
+      </div>`,
+      `<button class="btn-secondary" onclick="MODAL.close()">Abbrechen</button>
+       <button class="btn-add" onclick="MASCHINEN.save()">Speichern</button>`
+    );
+  },
+  async save() {
+    const typ = document.getElementById('m-typ').value;
+    if (!typ) { alert('Typ erforderlich.'); return; }
+    await fsSave('maschinen', newId(), {
+      typ, marke: document.getElementById('m-marke').value,
+      modell: document.getElementById('m-modell').value,
+      baujahr: document.getElementById('m-baujahr').value,
+      status: document.getElementById('m-status').value,
+      wartungNaechst: document.getElementById('m-wartung').value,
+      wartungLetzt: new Date().toISOString().split('T')[0]
+    });
+    MODAL.close(); APP.loadTab('maschinen');
+  },
+  async del(id) {
+    if (confirm('Maschine wirklich löschen?')) { await fsDel('maschinen', id); APP.loadTab('maschinen'); }
+  }
+};
+
+/* ═══════════════ TAB: PRODUKTE / MARKTPLATZ ═════════════════ */
+async function TAB_PRODUKTE(container) {
+  const produkte = await fsLoad('produkte');
+  const total = produkte.reduce((a,p)=>a+(Number(p.preis||0)*Number(p.menge||0)),0);
+  container.innerHTML = `
+    <div class="section-header">
+      <span class="section-title">Marktplatz – Produkte</span>
+      <button class="btn-add" onclick="PRODUKTE.openNew()">+ Neues Produkt</button>
+    </div>
+    <div class="metric-grid" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:16px">
+      <div class="metric-card"><div class="metric-label">Produkte total</div><div class="metric-value">${produkte.length}</div></div>
+      <div class="metric-card"><div class="metric-label">Warenwert</div><div class="metric-value" style="font-size:18px">${fmt.chf(total)}</div></div>
+      <div class="metric-card"><div class="metric-label">MWST (2.5% Nahrung)</div><div class="metric-value" style="font-size:18px">${fmt.chf(total*0.025)}</div></div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="data-table">
+        <thead><tr>
+          <th>Produkt</th><th>Kategorie</th><th>Menge</th><th>Einheit</th><th>Preis/Einheit</th><th>Gesamtwert</th><th>Verfügbar bis</th><th></th>
+        </tr></thead>
+        <tbody>
+          ${produkte.length === 0 ? `<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--text-muted)">Noch keine Produkte erfasst.</td></tr>` :
+            produkte.map(p => `<tr>
+              <td><strong>${esc(p.name)}</strong></td>
+              <td>${esc(p.kategorie||'–')}</td>
+              <td>${esc(p.menge||'–')}</td>
+              <td>${esc(p.einheit||'–')}</td>
+              <td>${fmt.chf(p.preis)}</td>
+              <td>${fmt.chf(Number(p.preis||0)*Number(p.menge||0))}</td>
+              <td>${fmt.date(p.verfuegbarBis)}</td>
+              <td><button class="btn-danger" onclick="PRODUKTE.del('${p.id}')">Löschen</button></td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+const PRODUKTE = {
+  openNew() {
+    MODAL.open('Neues Produkt inserieren', `
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Produktname *</label><input class="form-input" id="p-name" placeholder="Bio-Weizen"></div>
+        <div class="form-group"><label class="form-label">Kategorie</label>
+          <select class="form-select" id="p-kat">
+            <option value="">– wählen –</option>
+            <option>Getreide</option><option>Gemüse</option><option>Obst</option><option>Milchprodukte</option>
+            <option>Fleisch</option><option>Eier</option><option>Sonstiges</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Menge</label><input class="form-input" id="p-menge" type="number" placeholder="500"></div>
+        <div class="form-group"><label class="form-label">Einheit</label>
+          <select class="form-select" id="p-einheit">
+            <option value="">– wählen –</option><option>kg</option><option>Liter</option><option>Stück</option><option>Tonnen</option><option>Kisten</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Preis/Einheit (CHF)</label><input class="form-input" id="p-preis" type="number" step="0.05" placeholder="1.20"></div>
+        <div class="form-group"><label class="form-label">Verfügbar bis</label><input class="form-input" id="p-datum" type="date"></div>
+      </div>`,
+      `<button class="btn-secondary" onclick="MODAL.close()">Abbrechen</button>
+       <button class="btn-add" onclick="PRODUKTE.save()">Inserieren</button>`
+    );
+  },
+  async save() {
+    const name = document.getElementById('p-name').value.trim();
+    if (!name) { alert('Name erforderlich.'); return; }
+    await fsSave('produkte', newId(), {
+      name, kategorie: document.getElementById('p-kat').value,
+      menge: document.getElementById('p-menge').value,
+      einheit: document.getElementById('p-einheit').value,
+      preis: document.getElementById('p-preis').value,
+      verfuegbarBis: document.getElementById('p-datum').value
+    });
+    MODAL.close(); APP.loadTab('produkte');
+  },
+  async del(id) {
+    if (confirm('Produkt wirklich löschen?')) { await fsDel('produkte', id); APP.loadTab('produkte'); }
+  }
+};
+
+/* ═══════════════ TAB: BERICHTE ══════════════════════════════ */
+async function TAB_BERICHTE(container) {
+  const [felder, tiere, maschinen, produkte] = await Promise.all([
+    fsLoad('felder'), fsLoad('tiere'), fsLoad('maschinen'), fsLoad('produkte')
+  ]);
+  const warenwert = produkte.reduce((a,p)=>a+(Number(p.preis||0)*Number(p.menge||0)),0);
+  const haGesamt  = felder.reduce((a,f)=>a+Number(f.groesse||0),0);
+  const tierTotal = tiere.reduce((a,t)=>a+Number(t.anzahl||0),0);
+  container.innerHTML = `
+    <div class="section-header"><span class="section-title">Nachhaltigkeits- & Betriebsbericht</span></div>
+    <div class="metric-grid" style="margin-bottom:20px">
+      <div class="metric-card"><div class="metric-label">Gesamtfläche</div><div class="metric-value">${haGesamt.toFixed(1)}</div><div class="metric-sub">Hektaren</div></div>
+      <div class="metric-card"><div class="metric-label">Tierbestand</div><div class="metric-value">${tierTotal}</div><div class="metric-sub">Tiere total</div></div>
+      <div class="metric-card"><div class="metric-label">Maschinenpark</div><div class="metric-value">${maschinen.length}</div><div class="metric-sub">Geräte erfasst</div></div>
+      <div class="metric-card"><div class="metric-label">Warenwert</div><div class="metric-value" style="font-size:16px">${fmt.chf(warenwert)}</div><div class="metric-sub">Im Marktplatz</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="card">
+        <div class="section-header"><span class="section-title">Feldqualität-Übersicht</span></div>
+        ${felder.length===0?'<p style="color:var(--text-muted);font-size:13px">Keine Felder.</p>':felder.map(f=>{
+          const pct=parseInt(f.naehrstoff||75);
+          const col=pct>=75?'var(--green-600)':pct>=55?'var(--amber-600)':'var(--red-600)';
+          return `<div class="progress-row">
+            <span class="progress-name">${esc(f.name)}</span>
+            <div class="progress-bar-wrap"><div class="progress-fill" style="width:${pct}%;background:${col}"></div></div>
+            <span class="progress-val">${pct}%</span>
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="card">
+        <div class="section-header"><span class="section-title">Schweizer Direktzahlungen</span></div>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px">Geschätzte Beiträge (Richtwerte 2026):</p>
+        <table class="data-table">
+          <tr><td>Allg. Direktzahlungen</td><td style="text-align:right;font-weight:500">CHF 1'050 / ha</td></tr>
+          <tr><td>Bio-Beitrag (falls zutreffend)</td><td style="text-align:right;font-weight:500">CHF 1'600 / ha</td></tr>
+          <tr><td>Biodiversität Stufe I</td><td style="text-align:right;font-weight:500">CHF 450 / ha</td></tr>
+          <tr><td style="font-weight:600">Schätzung total (${haGesamt.toFixed(1)} ha)</td><td style="text-align:right;font-weight:600;color:var(--green-700)">${fmt.chf(haGesamt*1050)}</td></tr>
+        </table>
+        <p style="font-size:10px;color:var(--text-hint);margin-top:8px">* Richtwerte, keine Beratung. Offizielle Angaben: blw.admin.ch</p>
+      </div>
+    </div>`;
+}
+
+/* ═══════════════ TAB: BERATUNG ══════════════════════════════ */
+function TAB_BERATUNG(container) {
+  container.innerHTML = `
+    <div class="section-header"><span class="section-title">Landwirtschaftliche Beratung</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px">
+      ${[
+        {icon:'🌿', titel:'Pflanzenschutz', text:'Beratung zu Krankheiten, Schädlingen & Herbiziden', link:'https://www.strickhof.ch'},
+        {icon:'🐄', titel:'Tierhaltung & Recht', text:'TVD, RAUS, BTS – korrekte Haltung & Dokumentation', link:'https://www.blv.admin.ch'},
+        {icon:'🇨🇭', titel:'Direktzahlungen', text:'Anforderungen & Beitragsberechnung 2026', link:'https://www.blw.admin.ch'},
+        {icon:'🌱', titel:'Bio Suisse', text:'Umstieg auf Bio – Anforderungen & Unterstützung', link:'https://www.bio-suisse.ch'},
+        {icon:'🌦️', titel:'Agrarwetter Schweiz', text:'MeteoSchweiz – landwirtschaftlicher Wetterdienst', link:'https://www.meteoswiss.admin.ch'},
+        {icon:'⚖️', titel:'Datenschutz revDSG', text:'Schweizer Datenschutz für Betriebe', link:'https://www.edoeb.admin.ch'},
+      ].map(r=>`
+        <div class="card" style="cursor:pointer" onclick="window.open('${r.link}','_blank')">
+          <div style="font-size:28px;margin-bottom:8px">${r.icon}</div>
+          <div style="font-size:14px;font-weight:600;margin-bottom:4px">${r.titel}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">${r.text}</div>
+          <span class="chip chip-blue" style="font-size:10px">Zur Website →</span>
+        </div>`).join('')}
+    </div>
+    <div class="card">
+      <div class="section-title" style="margin-bottom:12px">Beratungsanfrage senden</div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Bereich</label>
+          <select class="form-select" id="berat-bereich">
+            <option>Pflanzenbau</option><option>Tierhaltung</option><option>Direktzahlungen</option><option>Recht & Compliance</option><option>Maschinentechnik</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Dringlichkeit</label>
+          <select class="form-select" id="berat-dring">
+            <option>Normal (3-5 Tage)</option><option>Dringend (24h)</option><option>Notfall (sofort)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">Ihre Frage</label>
+        <textarea class="form-textarea" id="berat-text" rows="3" placeholder="Beschreiben Sie Ihr Anliegen…"></textarea>
+      </div>
+      <button class="btn-add" onclick="alert('Anfrage erfasst – ein Berater meldet sich per E-Mail.')">Anfrage senden</button>
+    </div>`;
+}
+
+/* ═══════════════ TAB: EINSTELLUNGEN ════════════════════════════ */
+function TAB_EINSTELLUNGEN(container) {
+  container.innerHTML = `
+    <div class="section-header"><span class="section-title">Einstellungen</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="card">
+        <div style="font-size:14px;font-weight:600;margin-bottom:14px">Betriebsdaten</div>
+        <div class="form-group"><label class="form-label">Betriebsname</label><input class="form-input" placeholder="Musterhof Müller GmbH"></div>
+        <div class="form-group"><label class="form-label">Adresse</label><input class="form-input" placeholder="Dorfstrasse 1, 8400 Winterthur"></div>
+        <div class="form-group"><label class="form-label">MWST-Nummer</label><input class="form-input" placeholder="CHE-123.456.789 MWST"></div>
+        <div class="form-group"><label class="form-label">Betriebsnummer (TVD)</label><input class="form-input" placeholder="CH 123456789"></div>
+        <button class="btn-add" onclick="alert('Einstellungen gespeichert.')">Speichern</button>
+      </div>
+      <div class="card">
+        <div style="font-size:14px;font-weight:600;margin-bottom:14px">Wetter-API</div>
+        <div class="form-group"><label class="form-label">OpenWeatherMap API-Key</label><input class="form-input" type="password" placeholder="••••••••••••"></div>
+        <div class="form-group"><label class="form-label">Standort (PLZ)</label><input class="form-input" placeholder="8404"></div>
+        <button class="btn-add" style="margin-bottom:14px" onclick="alert('API-Key gespeichert.')">Speichern</button>
+        <hr style="border:none;border-top:1px solid var(--border);margin-bottom:14px">
+        <div style="font-size:14px;font-weight:600;margin-bottom:10px">Datenschutz (revDSG)</div>
+        <div style="font-size:12px;color:var(--text-muted);line-height:1.6">
+          Alle Daten werden verschlüsselt in Firebase (Schweiz/EU) gespeichert. 
+          Kein Verkauf an Dritte. Auskunft & Löschung jederzeit möglich.<br>
+          <a href="https://www.edoeb.admin.ch" target="_blank" style="color:var(--green-700)">Datenschutzbeauftragter CH →</a>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <div style="font-size:14px;font-weight:600;margin-bottom:10px">Über LandwirtApp</div>
+      <p style="font-size:13px;color:var(--text-muted)">Version 1.0.0 · Schweizer Edition · Entwickelt von ZeroGen, Kloten ZH<br>
+      Sprachen: DE / FR / IT · MWST: 2.5% Nahrungsmittel / 7.7% Standardsatz · Konform mit revDSG & EU-DSGVO</p>
+    </div>`;
+}
+</script>
+</body>
+</html>
