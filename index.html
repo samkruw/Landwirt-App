@@ -3,21 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LandwirtApp – Schweizer Edition</title>
+<title>LandwirtApp v2 – Schweizer Edition</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-<!-- ═══════════════════════════════════════════════════════════
-     FIREBASE CONFIG – ersetze mit deinen eigenen Werten
-     Firestore-Regeln: auth != null
-  ═══════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════
+     FIREBASE CONFIG – ersetze mit deinen Werten
+     Authorized Domains: Firebase Console → Auth → Settings
+  ═══════════════════════════════════════════════ -->
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { initializeApp }      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, collection, doc, setDoc, getDocs, deleteDoc, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-// ── KONFIGURATION ────────────────────────────────────────────
 const firebaseConfig = {
   apiKey: "AIzaSyDXrzMj_DWzt8nY00DuKUo9IeMSBhcjjiE",
   authDomain: "landwirt-app.firebaseapp.com",
@@ -26,29 +25,29 @@ const firebaseConfig = {
   messagingSenderId: "1001271736667",
   appId: "1:1001271736667:web:9543d71108c43f2ecdc27e"
 };
+    
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getFirestore(app);
 
-// ── GLOBALE HELFER (erreichbar aus normalen <script>-Blöcken) ─
-window._auth = auth;
-window._db   = db;
-window._col  = (path) => collection(db, path);
-window._doc  = (path, id) => doc(db, path, id);
-window._set  = setDoc;
+window._auth    = auth;
+window._db      = db;
+window._col     = (p) => collection(db, p);
+window._doc     = (p, id) => doc(db, p, id);
+window._set     = setDoc;
 window._getDocs = getDocs;
-window._del  = deleteDoc;
-window._ts   = serverTimestamp;
+window._del     = deleteDoc;
+window._ts      = serverTimestamp;
 window._signIn  = (e, p) => signInWithEmailAndPassword(auth, e, p);
 window._signOut = () => signOut(auth);
 
 onAuthStateChanged(auth, (user) => {
   if (user) {
     window._uid = user.uid;
-    window._userEmail = user.email;
-    document.getElementById('auth-screen').style.display = 'none';
-    document.getElementById('app-shell').style.display   = 'flex';
-    document.getElementById('user-email-label').textContent = user.email;
+    document.getElementById('auth-screen').style.display  = 'none';
+    document.getElementById('app-shell').style.display    = 'flex';
+    document.getElementById('user-email-lbl').textContent = user.email;
+    document.getElementById('user-avatar').textContent    = user.email.slice(0,2).toUpperCase();
     APP.loadTab('uebersicht');
   } else {
     window._uid = null;
@@ -59,1066 +58,1011 @@ onAuthStateChanged(auth, (user) => {
 </script>
 
 <style>
-/* ═══════════════════════════ RESET & BASE ═══════════════════════════ */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --green-900: #173404; --green-800: #27500A; --green-700: #3B6D11;
-  --green-600: #639922; --green-500: #97C459; --green-200: #C0DD97; --green-50: #EAF3DE;
-  --amber-600: #BA7517; --amber-200: #FAC775; --amber-50: #FAEEDA;
-  --red-600: #A32D2D; --red-50: #FCEBEB;
-  --blue-700: #185FA5; --blue-50: #E6F1FB;
-  --gray-900: #1a1a18; --gray-800: #2C2C2A; --gray-600: #5F5E5A;
-  --gray-400: #888780; --gray-200: #D3D1C7; --gray-50: #F1EFE8;
-  --bg: #F7F6F0; --surface: #FFFFFF; --border: rgba(0,0,0,0.08);
-  --text: #1a1a18; --text-muted: #5F5E5A; --text-hint: #888780;
-  --radius: 10px; --radius-lg: 14px;
-  --font: 'DM Sans', system-ui, sans-serif;
-  --mono: 'DM Mono', monospace;
-  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --g900:#173404;--g800:#27500A;--g700:#3B6D11;--g600:#639922;--g500:#97C459;--g200:#C0DD97;--g50:#EAF3DE;
+  --a600:#BA7517;--a200:#FAC775;--a50:#FAEEDA;
+  --r600:#A32D2D;--r200:#F7C1C1;--r50:#FCEBEB;
+  --b700:#185FA5;--b200:#85B7EB;--b50:#E6F1FB;
+  --gr400:#888780;--gr200:#D3D1C7;--gr50:#F1EFE8;
+  --bg:#F7F6F0;--sur:#FFFFFF;--brd:rgba(0,0,0,0.08);
+  --txt:#1a1a18;--muted:#5F5E5A;--hint:#888780;
+  --r:10px;--rl:14px;
+  --font:'DM Sans',system-ui,sans-serif;
+  --mono:'DM Mono',monospace;
 }
+body{font-family:var(--font);background:var(--bg);color:var(--txt);font-size:14px;line-height:1.5;min-height:100vh}
 
-body { font-family: var(--font); background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; min-height: 100vh; }
+/* ── AUTH ── */
+#auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,var(--g800),var(--g700),var(--g600))}
+.auth-card{background:var(--sur);border-radius:20px;padding:40px 36px;width:360px;box-shadow:0 20px 60px rgba(0,0,0,.15)}
+.auth-logo{display:flex;align-items:center;gap:10px;margin-bottom:28px}
+.auth-icon{width:40px;height:40px;background:var(--g700);border-radius:10px;display:flex;align-items:center;justify-content:center}
+.auth-icon svg{width:22px;height:22px;fill:white}
+.auth-t{font-size:22px;font-weight:600;margin-bottom:4px}
+.auth-s{font-size:13px;color:var(--muted);margin-bottom:22px}
+.fl{font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;display:block}
+.fi{width:100%;padding:10px 12px;border:1.5px solid var(--gr200);border-radius:var(--r);font-family:var(--font);font-size:14px;background:var(--bg);color:var(--txt);transition:border-color .15s;margin-bottom:12px}
+.fi:focus{outline:none;border-color:var(--g600);background:#fff}
+.bp{width:100%;padding:11px;background:var(--g700);color:#fff;border:none;border-radius:var(--r);font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;transition:background .15s;margin-top:6px}
+.bp:hover{background:var(--g800)}
+.auth-err{color:var(--r600);font-size:12px;margin-top:8px;display:none}
 
-/* ═══════════════════════════ AUTH SCREEN ════════════════════════════ */
-#auth-screen {
-  display: flex; align-items: center; justify-content: center;
-  min-height: 100vh; background: linear-gradient(135deg, var(--green-800) 0%, var(--green-700) 50%, var(--green-600) 100%);
-}
-.auth-card {
-  background: var(--surface); border-radius: 20px; padding: 40px 36px;
-  width: 360px; box-shadow: 0 20px 60px rgba(0,0,0,0.15);
-}
-.auth-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
-.auth-logo-icon {
-  width: 40px; height: 40px; background: var(--green-700); border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-}
-.auth-logo-icon svg { width: 22px; height: 22px; fill: white; }
-.auth-logo-text { font-size: 18px; font-weight: 600; color: var(--text); }
-.auth-logo-sub { font-size: 12px; color: var(--text-muted); }
-.auth-title { font-size: 22px; font-weight: 600; margin-bottom: 6px; }
-.auth-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; }
-.form-group { margin-bottom: 14px; }
-.form-label { font-size: 12px; font-weight: 500; color: var(--text-muted); margin-bottom: 5px; display: block; }
-.form-input {
-  width: 100%; padding: 10px 12px; border: 1.5px solid var(--gray-200);
-  border-radius: var(--radius); font-family: var(--font); font-size: 14px;
-  background: var(--bg); color: var(--text); transition: border-color 0.15s;
-}
-.form-input:focus { outline: none; border-color: var(--green-600); background: white; }
-.btn-primary {
-  width: 100%; padding: 11px; background: var(--green-700); color: white;
-  border: none; border-radius: var(--radius); font-family: var(--font);
-  font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.15s;
-  margin-top: 8px;
-}
-.btn-primary:hover { background: var(--green-800); }
-.auth-error { color: var(--red-600); font-size: 12px; margin-top: 8px; display: none; }
-.auth-demo { font-size: 12px; color: var(--text-hint); margin-top: 14px; text-align: center; }
+/* ── SHELL ── */
+#app-shell{display:none;flex-direction:row;min-height:100vh}
+.sidebar{width:220px;min-height:100vh;background:var(--sur);border-right:1px solid var(--brd);display:flex;flex-direction:column;position:sticky;top:0;flex-shrink:0}
+.s-logo{padding:16px 14px 14px;border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:9px}
+.s-logo-icon{width:30px;height:30px;background:var(--g700);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.s-logo-icon svg{width:17px;height:17px;fill:white}
+.s-logo-t{font-size:13px;font-weight:600}
+.s-logo-s{font-size:10px;color:var(--muted)}
+nav{flex:1;padding:8px;overflow-y:auto}
+.nav-sec{font-size:10px;font-weight:600;color:var(--hint);letter-spacing:.08em;text-transform:uppercase;padding:10px 8px 4px}
+.ni{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r);cursor:pointer;font-size:13px;color:var(--muted);transition:all .12s;margin-bottom:1px;user-select:none}
+.ni:hover{background:var(--gr50);color:var(--txt)}
+.ni.active{background:var(--g50);color:var(--g700);font-weight:500}
+.ni svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;flex-shrink:0}
+.nb{margin-left:auto;background:var(--a50);color:var(--a600);font-size:10px;font-weight:600;padding:1px 6px;border-radius:20px}
+.sf{padding:10px 12px;border-top:1px solid var(--brd)}
+.ua{display:flex;align-items:center;gap:8px}
+.av{width:28px;height:28px;border-radius:50%;background:var(--g50);border:1.5px solid var(--g200);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--g700);flex-shrink:0}
+.un{font-size:12px;font-weight:500}
+#user-email-lbl{font-size:10px;color:var(--muted);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px}
+.b-logout{display:flex;align-items:center;gap:5px;margin-top:8px;background:none;border:1px solid var(--brd);border-radius:6px;padding:5px 10px;font-size:11px;color:var(--muted);cursor:pointer;width:100%;transition:all .12s;font-family:var(--font)}
+.b-logout:hover{background:var(--r50);color:var(--r600);border-color:var(--r600)}
 
-/* ═══════════════════════════ APP SHELL ══════════════════════════════ */
-#app-shell { display: none; flex-direction: row; min-height: 100vh; }
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:var(--sur);border-bottom:1px solid var(--brd);padding:13px 22px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.tb-title{font-size:16px;font-weight:600}
+.tb-right{display:flex;align-items:center;gap:7px}
+.chip{font-size:11px;padding:3px 9px;border-radius:20px;font-weight:500}
+.cg{background:var(--g50);color:var(--g700)}
+.ca{background:var(--a50);color:var(--a600)}
+.cb{background:var(--b50);color:var(--b700)}
+.content{flex:1;overflow-y:auto;padding:18px 22px}
 
-/* ── SIDEBAR ── */
-.sidebar {
-  width: 220px; min-height: 100vh; background: var(--surface);
-  border-right: 1px solid var(--border); display: flex; flex-direction: column;
-  position: sticky; top: 0; flex-shrink: 0;
-}
-.sidebar-logo {
-  padding: 18px 16px 14px; border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; gap: 10px;
-}
-.s-logo-icon {
-  width: 32px; height: 32px; background: var(--green-700); border-radius: 8px;
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-}
-.s-logo-icon svg { width: 18px; height: 18px; fill: white; }
-.s-logo-text { font-size: 14px; font-weight: 600; line-height: 1.2; }
-.s-logo-sub { font-size: 10px; color: var(--text-muted); }
-nav { flex: 1; padding: 10px 8px; overflow-y: auto; }
-.nav-section { font-size: 10px; font-weight: 600; color: var(--text-hint); letter-spacing: 0.08em; text-transform: uppercase; padding: 10px 8px 4px; }
-.nav-item {
-  display: flex; align-items: center; gap: 9px; padding: 8px 10px;
-  border-radius: var(--radius); cursor: pointer; font-size: 13px;
-  color: var(--text-muted); transition: all 0.12s; margin-bottom: 1px;
-  user-select: none;
-}
-.nav-item:hover { background: var(--gray-50); color: var(--text); }
-.nav-item.active { background: var(--green-50); color: var(--green-700); font-weight: 500; }
-.nav-item svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.8; flex-shrink: 0; }
-.nav-badge {
-  margin-left: auto; background: var(--amber-50); color: var(--amber-600);
-  font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 20px;
-}
-.sidebar-footer {
-  padding: 12px 14px; border-top: 1px solid var(--border);
-}
-.user-info { display: flex; align-items: center; gap: 9px; }
-.user-avatar {
-  width: 30px; height: 30px; border-radius: 50%; background: var(--green-50);
-  border: 1.5px solid var(--green-200); display: flex; align-items: center;
-  justify-content: center; font-size: 11px; font-weight: 600; color: var(--green-700);
-  flex-shrink: 0;
-}
-.user-name { font-size: 12px; font-weight: 500; }
-#user-email-label { font-size: 10px; color: var(--text-muted); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px; }
-.btn-logout {
-  display: flex; align-items: center; gap: 5px; margin-top: 8px;
-  background: none; border: 1px solid var(--border); border-radius: 6px;
-  padding: 5px 10px; font-size: 11px; color: var(--text-muted); cursor: pointer;
-  width: 100%; transition: all 0.12s;
-}
-.btn-logout:hover { background: var(--red-50); color: var(--red-600); border-color: var(--red-600); }
-
-/* ── MAIN CONTENT ── */
-.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-.topbar {
-  background: var(--surface); border-bottom: 1px solid var(--border);
-  padding: 14px 24px; display: flex; align-items: center; justify-content: space-between;
-  position: sticky; top: 0; z-index: 10;
-}
-.topbar-title { font-size: 16px; font-weight: 600; }
-.topbar-right { display: flex; align-items: center; gap: 8px; }
-.chip { font-size: 11px; padding: 4px 10px; border-radius: 20px; font-weight: 500; }
-.chip-green { background: var(--green-50); color: var(--green-700); }
-.chip-amber { background: var(--amber-50); color: var(--amber-600); }
-.chip-blue  { background: var(--blue-50);  color: var(--blue-700); }
-
-.content-area { flex: 1; overflow-y: auto; padding: 20px 24px; }
-
-/* ═══════════════════════════ GEMEINSAME KOMPONENTEN ═════════════════ */
-.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-.section-title { font-size: 15px; font-weight: 600; }
-.btn-add {
-  display: flex; align-items: center; gap: 6px; padding: 7px 14px;
-  background: var(--green-700); color: white; border: none; border-radius: var(--radius);
-  font-family: var(--font); font-size: 12px; font-weight: 500; cursor: pointer;
-  transition: background 0.12s;
-}
-.btn-add:hover { background: var(--green-800); }
-.btn-secondary {
-  padding: 7px 14px; background: var(--surface); color: var(--text);
-  border: 1px solid var(--border); border-radius: var(--radius);
-  font-family: var(--font); font-size: 12px; cursor: pointer; transition: all 0.12s;
-}
-.btn-secondary:hover { background: var(--gray-50); }
-.btn-danger {
-  padding: 5px 10px; background: none; color: var(--red-600);
-  border: 1px solid var(--red-600); border-radius: 6px;
-  font-family: var(--font); font-size: 11px; cursor: pointer; transition: all 0.12s;
-}
-.btn-danger:hover { background: var(--red-50); }
-
-.card {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius-lg); padding: 18px 20px;
-  box-shadow: var(--shadow);
-}
-.metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; margin-bottom: 20px; }
-.metric-card {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius-lg); padding: 16px 18px; box-shadow: var(--shadow);
-}
-.metric-label { font-size: 11px; color: var(--text-muted); font-weight: 500; margin-bottom: 4px; }
-.metric-value { font-size: 26px; font-weight: 600; line-height: 1; margin-bottom: 4px; }
-.metric-sub { font-size: 11px; color: var(--text-muted); }
-.metric-up   { color: var(--green-700); }
-.metric-down { color: var(--red-600); }
-
-.data-table { width: 100%; border-collapse: collapse; }
-.data-table th {
-  text-align: left; font-size: 11px; font-weight: 600; color: var(--text-muted);
-  text-transform: uppercase; letter-spacing: 0.06em; padding: 10px 14px;
-  border-bottom: 1px solid var(--border); background: var(--gray-50);
-}
-.data-table td { padding: 11px 14px; border-bottom: 1px solid var(--border); font-size: 13px; }
-.data-table tr:last-child td { border-bottom: none; }
-.data-table tr:hover td { background: var(--gray-50); }
-.data-table th:first-child, .data-table td:first-child { border-radius: 0; }
-
-.status-badge {
-  display: inline-block; padding: 2px 8px; border-radius: 20px;
-  font-size: 10px; font-weight: 600;
-}
-.st-ok   { background: var(--green-50); color: var(--green-700); }
-.st-warn { background: var(--amber-50); color: var(--amber-600); }
-.st-err  { background: var(--red-50);   color: var(--red-600); }
-.st-info { background: var(--blue-50);  color: var(--blue-700); }
+/* ── SHARED ── */
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px}
+.sec-t{font-size:15px;font-weight:600}
+.btn-add{display:flex;align-items:center;gap:5px;padding:7px 13px;background:var(--g700);color:#fff;border:none;border-radius:var(--r);font-family:var(--font);font-size:12px;font-weight:500;cursor:pointer;transition:background .12s}
+.btn-add:hover{background:var(--g800)}
+.btn-sec{padding:7px 13px;background:var(--sur);color:var(--txt);border:1px solid var(--brd);border-radius:var(--r);font-family:var(--font);font-size:12px;cursor:pointer;transition:all .12s}
+.btn-sec:hover{background:var(--gr50)}
+.btn-del{padding:4px 9px;background:none;color:var(--r600);border:1px solid var(--r200);border-radius:6px;font-family:var(--font);font-size:11px;cursor:pointer;transition:all .12s}
+.btn-del:hover{background:var(--r50)}
+.card{background:var(--sur);border:1px solid var(--brd);border-radius:var(--rl);padding:16px 18px}
+.mgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px;margin-bottom:18px}
+.mc{background:var(--sur);border:1px solid var(--brd);border-radius:var(--rl);padding:14px 16px}
+.ml{font-size:11px;color:var(--muted);font-weight:500;margin-bottom:3px}
+.mv{font-size:24px;font-weight:600;line-height:1;margin-bottom:3px}
+.ms{font-size:11px;color:var(--muted)}
+.mu{color:var(--g700)}
+.md{color:var(--r600)}
+table.dt{width:100%;border-collapse:collapse}
+table.dt th{text-align:left;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:9px 13px;border-bottom:1px solid var(--brd);background:var(--gr50)}
+table.dt td{padding:10px 13px;border-bottom:1px solid var(--brd);font-size:13px}
+table.dt tr:last-child td{border-bottom:none}
+table.dt tr:hover td{background:var(--gr50)}
+.sb{display:inline-block;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:600}
+.s-ok{background:var(--g50);color:var(--g700)}
+.s-wa{background:var(--a50);color:var(--a600)}
+.s-er{background:var(--r50);color:var(--r600)}
+.s-in{background:var(--b50);color:var(--b700)}
+.prow{display:flex;align-items:center;gap:9px;margin-bottom:7px}
+.pname{font-size:12px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pbw{flex:2;height:5px;background:var(--gr50);border-radius:3px;overflow:hidden;border:1px solid var(--brd)}
+.pf{height:100%;border-radius:3px;transition:width .4s}
+.pv{font-size:11px;color:var(--muted);min-width:34px;text-align:right;font-family:var(--mono)}
+.load{text-align:center;padding:40px;color:var(--muted);font-size:13px}
+.spin{width:26px;height:26px;border:3px solid var(--g200);border-top-color:var(--g700);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 10px}
+@keyframes spin{to{transform:rotate(360deg)}}
 
 /* ── MODAL ── */
-.modal-overlay {
-  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35);
-  z-index: 100; align-items: center; justify-content: center;
-}
-.modal-overlay.open { display: flex; }
-.modal-box {
-  background: var(--surface); border-radius: var(--radius-lg); padding: 24px 26px;
-  width: 480px; max-width: 95vw; max-height: 85vh; overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.18);
-}
-.modal-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
-.modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
-.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.form-group { margin-bottom: 12px; }
-.form-label { font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block; }
-.form-input, .form-select, .form-textarea {
-  width: 100%; padding: 8px 10px; border: 1px solid var(--gray-200);
-  border-radius: var(--radius); font-family: var(--font); font-size: 13px;
-  background: var(--bg); color: var(--text); transition: border-color 0.12s;
-}
-.form-input:focus, .form-select:focus, .form-textarea:focus {
-  outline: none; border-color: var(--green-600); background: white;
-}
-.form-textarea { resize: vertical; min-height: 70px; }
+.mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100;align-items:center;justify-content:center}
+.mo.open{display:flex}
+.mb{background:var(--sur);border-radius:var(--rl);padding:22px 24px;width:480px;max-width:95vw;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.18)}
+.mt{font-size:16px;font-weight:600;margin-bottom:14px}
+.mf{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.fg{margin-bottom:11px}
+.fl2{font-size:11px;font-weight:600;color:var(--muted);margin-bottom:3px;display:block}
+.fi2,.fs,.fta{width:100%;padding:8px 10px;border:1px solid var(--gr200);border-radius:var(--r);font-family:var(--font);font-size:13px;background:var(--bg);color:var(--txt);transition:border-color .12s}
+.fi2:focus,.fs:focus,.fta:focus{outline:none;border-color:var(--g600);background:#fff}
+.fta{resize:vertical;min-height:65px}
 
-/* ══════════ ÜBERSICHT ══════════ */
-#tab-uebersicht .grid2 { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; margin-bottom: 16px; }
-#tab-uebersicht .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
-.progress-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-.progress-name { font-size: 12px; flex: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.progress-bar-wrap { flex: 2; height: 6px; background: var(--gray-50); border-radius: 4px; overflow: hidden; border: 1px solid var(--border); }
-.progress-fill { height: 100%; border-radius: 4px; transition: width 0.4s; }
-.progress-val { font-size: 11px; color: var(--text-muted); min-width: 36px; text-align: right; font-family: var(--mono); }
-.weather-days { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 12px; }
-.w-day-card {
-  background: var(--gray-50); border-radius: var(--radius); padding: 10px 8px; text-align: center;
-  border: 1px solid var(--border);
-}
-.w-day-card.today { border-color: var(--green-200); background: var(--green-50); }
-.w-day-label { font-size: 10px; color: var(--text-muted); margin-bottom: 4px; }
-.w-icon { font-size: 22px; line-height: 1; margin-bottom: 4px; }
-.w-temp { font-size: 14px; font-weight: 600; }
-.w-prec { font-size: 10px; color: var(--text-muted); }
-.alert-list { display: flex; flex-direction: column; gap: 7px; }
-.alert-item {
-  display: flex; align-items: flex-start; gap: 9px; padding: 9px 11px;
-  border-radius: var(--radius); border: 1px solid transparent;
-}
-.alert-ok   { background: var(--green-50); border-color: var(--green-200); }
-.alert-warn { background: var(--amber-50); border-color: var(--amber-200); }
-.alert-err  { background: var(--red-50); border-color: #F7C1C1; }
-.alert-info { background: var(--blue-50);  border-color: #B5D4F4; }
-.alert-dot { width: 7px; height: 7px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
-.dot-ok   { background: var(--green-600); }
-.dot-warn { background: var(--amber-600); }
-.dot-err  { background: var(--red-600); }
-.dot-info { background: var(--blue-700); }
-.alert-text { font-size: 12px; flex: 1; line-height: 1.4; }
-.alert-time { font-size: 10px; color: var(--text-hint); margin-top: 1px; }
-.recommend-box {
-  margin-top: 10px; background: var(--amber-50); border: 1px solid var(--amber-200);
-  border-radius: var(--radius); padding: 9px 11px;
-}
-.recommend-label { font-size: 10px; font-weight: 600; color: var(--amber-600); margin-bottom: 2px; }
-.recommend-text { font-size: 12px; color: var(--text); }
+/* ── WETTER ── */
+.w-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px}
+.wd{background:var(--gr50);border-radius:var(--r);padding:10px 7px;text-align:center;border:1px solid var(--brd)}
+.wd.today{border-color:var(--g200);background:var(--g50)}
+.wd-day{font-size:10px;color:var(--muted);margin-bottom:3px}
+.wd-icon{font-size:20px;line-height:1;margin-bottom:3px}
+.wd-t{font-size:13px;font-weight:600}
+.wd-p{font-size:10px;color:var(--muted)}
+.wd-w{font-size:10px;color:var(--hint)}
+.rec-box{background:var(--a50);border:1px solid var(--a200);border-radius:var(--r);padding:9px 11px;margin-top:10px}
+.rec-l{font-size:10px;font-weight:600;color:var(--a600);margin-bottom:2px}
+.rec-t{font-size:12px;color:var(--txt)}
+.w-now{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.wn{background:var(--sur);border:1px solid var(--brd);border-radius:var(--r);padding:10px 12px;text-align:center}
+.wn-icon{font-size:22px;margin-bottom:4px}
+.wn-val{font-size:16px;font-weight:600}
+.wn-lbl{font-size:10px;color:var(--muted)}
 
-/* ══════════ LOADING ══════════ */
-.loading-state { text-align: center; padding: 40px; color: var(--text-muted); font-size: 13px; }
-.loading-spinner {
-  width: 28px; height: 28px; border: 3px solid var(--green-200);
-  border-top-color: var(--green-700); border-radius: 50%;
-  animation: spin 0.8s linear infinite; margin: 0 auto 10px;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
+/* ── ALERTS ── */
+.al{display:flex;flex-direction:column;gap:6px}
+.ai{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border-radius:var(--r);border:1px solid transparent}
+.ai-ok{background:var(--g50);border-color:var(--g200)}
+.ai-wa{background:var(--a50);border-color:var(--a200)}
+.ai-er{background:var(--r50);border-color:var(--r200)}
+.ai-in{background:var(--b50);border-color:var(--b200)}
+.ad{width:6px;height:6px;border-radius:50%;margin-top:5px;flex-shrink:0}
+.dok{background:var(--g600)}.dwa{background:var(--a600)}.der{background:var(--r600)}.din{background:var(--b700)}
+.at{font-size:12px;flex:1;line-height:1.4}
+.atime{font-size:10px;color:var(--hint);margin-top:1px}
 
-/* ══════════ RESPONSIVE ══════════ */
-@media (max-width: 768px) {
-  .sidebar { width: 56px; }
-  .s-logo-text, .s-logo-sub, .nav-item span, .user-name, #user-email-label, .nav-section, .nav-badge { display: none; }
-  .nav-item { justify-content: center; padding: 10px; }
-  .nav-item svg { margin: 0; }
-  .sidebar-logo { justify-content: center; padding: 14px 8px; }
-  .metric-grid { grid-template-columns: 1fr 1fr; }
-  #tab-uebersicht .grid2 { grid-template-columns: 1fr; }
-  #tab-uebersicht .grid3 { grid-template-columns: 1fr; }
-  .content-area { padding: 14px 14px; }
-  .topbar { padding: 12px 16px; }
+/* ── KALENDER ── */
+.kal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:12px}
+.kal-day-hdr{font-size:10px;font-weight:600;color:var(--muted);text-align:center;padding:4px 0}
+.kal-cell{min-height:52px;background:var(--sur);border:1px solid var(--brd);border-radius:6px;padding:4px;font-size:10px}
+.kal-cell.today{border-color:var(--g600)}
+.kal-num{font-size:11px;font-weight:500;margin-bottom:2px}
+.kal-dot{width:100%;background:var(--g50);color:var(--g700);border-radius:3px;padding:1px 3px;margin-bottom:1px;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kal-dot-a{background:var(--a50);color:var(--a600)}
+.kal-dot-r{background:var(--r50);color:var(--r600)}
+.kal-dot-b{background:var(--b50);color:var(--b700)}
+
+/* ── BUCHHALTUNG ── */
+.buch-bar{display:flex;gap:0;border-radius:var(--r);overflow:hidden;height:20px;margin-bottom:8px}
+.bb-ein{background:var(--g500)}
+.bb-aus{background:var(--r200)}
+.bb-dz{background:var(--b200)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  .sidebar{width:52px}
+  .s-logo-t,.s-logo-s,.ni span,.un,#user-email-lbl,.nav-sec,.nb{display:none}
+  .ni{justify-content:center;padding:10px}
+  .ni svg{margin:0}
+  .s-logo{justify-content:center;padding:12px 6px}
+  .mgrid{grid-template-columns:1fr 1fr}
+  .content{padding:12px}
+  .topbar{padding:11px 14px}
 }
 </style>
 </head>
 <body>
 
-<!-- ═══════════════════ AUTH SCREEN ═══════════════════════════ -->
+<!-- AUTH -->
 <div id="auth-screen">
   <div class="auth-card">
     <div class="auth-logo">
-      <div class="auth-logo-icon">
-        <svg viewBox="0 0 24 24"><path d="M12 3L4 10h3v11h10V10h3L12 3z"/></svg>
-      </div>
-      <div>
-        <div class="auth-logo-text">LandwirtApp</div>
-        <div class="auth-logo-sub">Schweizer Edition</div>
-      </div>
+      <div class="auth-icon"><svg viewBox="0 0 24 24"><path d="M12 3L4 10h3v11h10V10h3L12 3z"/></svg></div>
+      <div><div style="font-size:16px;font-weight:600">LandwirtApp</div><div style="font-size:11px;color:var(--muted)">Schweizer Edition v2</div></div>
     </div>
-    <div class="auth-title">Willkommen zurück</div>
-    <div class="auth-sub">Melden Sie sich mit Ihrem Konto an</div>
-    <div class="form-group">
-      <label class="form-label" for="login-email">E-Mail</label>
-      <input class="form-input" id="login-email" type="email" placeholder="name@betrieb.ch" autocomplete="email">
-    </div>
-    <div class="form-group">
-      <label class="form-label" for="login-pw">Passwort</label>
-      <input class="form-input" id="login-pw" type="password" placeholder="••••••••" autocomplete="current-password">
-    </div>
-    <button class="btn-primary" onclick="AUTH.login()">Anmelden</button>
-    <div id="auth-error" class="auth-error"></div>
-    <div class="auth-demo">Demo: demo@landwirt.ch / demo1234 (Firebase konfigurieren)</div>
+    <div class="auth-t">Willkommen zurück</div>
+    <div class="auth-s">Bitte anmelden</div>
+    <label class="fl">E-Mail</label>
+    <input class="fi" id="li-email" type="email" placeholder="name@betrieb.ch" autocomplete="email">
+    <label class="fl">Passwort</label>
+    <input class="fi" id="li-pw" type="password" placeholder="••••••••" autocomplete="current-password">
+    <button class="bp" onclick="AUTH.login()">Anmelden</button>
+    <div id="auth-err" class="auth-err"></div>
   </div>
 </div>
 
-<!-- ═══════════════════ APP SHELL ═══════════════════════════════ -->
+<!-- APP SHELL -->
 <div id="app-shell">
-
-  <!-- SIDEBAR -->
   <aside class="sidebar">
-    <div class="sidebar-logo">
-      <div class="s-logo-icon">
-        <svg viewBox="0 0 24 24"><path d="M12 3L4 10h3v11h10V10h3L12 3z"/></svg>
-      </div>
-      <div>
-        <div class="s-logo-text">LandwirtApp</div>
-        <div class="s-logo-sub">Schweizer Edition</div>
-      </div>
+    <div class="s-logo">
+      <div class="s-logo-icon"><svg viewBox="0 0 24 24"><path d="M12 3L4 10h3v11h10V10h3L12 3z"/></svg></div>
+      <div><div class="s-logo-t">LandwirtApp</div><div class="s-logo-s">Schweizer Edition</div></div>
     </div>
     <nav>
-      <div class="nav-section">Hauptmenü</div>
-      <div class="nav-item active" onclick="APP.loadTab('uebersicht')" data-tab="uebersicht">
-        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-        <span>Übersicht</span>
+      <div class="nav-sec">Betrieb</div>
+      <div class="ni active" onclick="APP.go('uebersicht')" data-tab="uebersicht">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Übersicht</span>
       </div>
-      <div class="nav-item" onclick="APP.loadTab('felder')" data-tab="felder">
-        <svg viewBox="0 0 24 24"><path d="M3 18L9 6l6 7 3-4 3 9H3z"/></svg>
-        <span>Felder</span>
+      <div class="ni" onclick="APP.go('kalender')" data-tab="kalender">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span>Kalender</span>
       </div>
-      <div class="nav-item" onclick="APP.loadTab('tiere')" data-tab="tiere">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-        <span>Tiere</span>
+      <div class="ni" onclick="APP.go('tagesrapporte')" data-tab="tagesrapporte">
+        <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="12" y2="15"/></svg><span>Tagesrapporte</span>
       </div>
-      <div class="nav-item" onclick="APP.loadTab('maschinen')" data-tab="maschinen">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M18.4 5.6l-1.4 1.4M5.6 18.4l-1.4 1.4"/></svg>
-        <span>Maschinen</span>
+      <div class="nav-sec">Ressourcen</div>
+      <div class="ni" onclick="APP.go('felder')" data-tab="felder">
+        <svg viewBox="0 0 24 24"><path d="M3 18L9 6l6 7 3-4 3 9H3z"/></svg><span>Felder</span>
       </div>
-      <div class="nav-section">Geschäft</div>
-      <div class="nav-item" onclick="APP.loadTab('produkte')" data-tab="produkte">
-        <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14h18V6l-3-4H6z"/><path d="M3 6h18M16 10a4 4 0 01-8 0"/></svg>
-        <span>Marktplatz</span>
-        <span class="nav-badge" id="badge-produkte" style="display:none"></span>
+      <div class="ni" onclick="APP.go('tiere')" data-tab="tiere">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg><span>Tiere</span>
       </div>
-      <div class="nav-item" onclick="APP.loadTab('berichte')" data-tab="berichte">
-        <svg viewBox="0 0 24 24"><path d="M3 3h18v18H3z" rx="2"/><path d="M8 17V13M12 17V9M16 17V13"/></svg>
-        <span>Berichte</span>
+      <div class="ni" onclick="APP.go('maschinen')" data-tab="maschinen">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M18.4 5.6l-1.4 1.4M5.6 18.4l-1.4 1.4"/></svg><span>Maschinen</span>
       </div>
-      <div class="nav-item" onclick="APP.loadTab('beratung')" data-tab="beratung">
-        <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-        <span>Beratung</span>
+      <div class="ni" onclick="APP.go('lager')" data-tab="lager">
+        <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg><span>Lager & Inventar</span>
       </div>
-      <div class="nav-item" onclick="APP.loadTab('einstellungen')" data-tab="einstellungen">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-        <span>Einstellungen</span>
+      <div class="ni" onclick="APP.go('mitarbeiter')" data-tab="mitarbeiter">
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg><span>Mitarbeiter</span>
+      </div>
+      <div class="nav-sec">Geschäft</div>
+      <div class="ni" onclick="APP.go('rechnungen')" data-tab="rechnungen">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="12" y2="17"/></svg><span>Rechnungen</span>
+      </div>
+      <div class="ni" onclick="APP.go('produkte')" data-tab="produkte">
+        <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14h18V6l-3-4H6z"/><path d="M3 6h18M16 10a4 4 0 01-8 0"/></svg><span>Marktplatz</span>
+      </div>
+      <div class="ni" onclick="APP.go('buchhaltung')" data-tab="buchhaltung">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg><span>Buchhaltung</span>
+      </div>
+      <div class="nav-sec">Infos</div>
+      <div class="ni" onclick="APP.go('wetter')" data-tab="wetter">
+        <svg viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z"/></svg><span>Wetter</span>
+      </div>
+      <div class="ni" onclick="APP.go('erinnerungen')" data-tab="erinnerungen">
+        <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg><span>Erinnerungen</span><span class="nb" id="nb-er" style="display:none">0</span>
+      </div>
+      <div class="ni" onclick="APP.go('beratung')" data-tab="beratung">
+        <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span>Beratung</span>
+      </div>
+      <div class="ni" onclick="APP.go('einstellungen')" data-tab="einstellungen">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg><span>Einstellungen</span>
       </div>
     </nav>
-    <div class="sidebar-footer">
-      <div class="user-info">
-        <div class="user-avatar" id="user-avatar">HM</div>
-        <div>
-          <div class="user-name" id="user-name-label">Betrieb</div>
-          <span id="user-email-label">–</span>
-        </div>
+    <div class="sf">
+      <div class="ua">
+        <div class="av" id="user-avatar">?</div>
+        <div><div class="un">Betrieb</div><span id="user-email-lbl">–</span></div>
       </div>
-      <button class="btn-logout" onclick="AUTH.logout()">
-        <svg width="12" height="12" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-        Abmelden
+      <button class="b-logout" onclick="AUTH.logout()">
+        <svg width="11" height="11" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>Abmelden
       </button>
     </div>
   </aside>
 
-  <!-- MAIN -->
   <main class="main">
     <div class="topbar">
-      <div class="topbar-title" id="topbar-title">Übersicht</div>
-      <div class="topbar-right">
-        <span class="chip chip-green" id="topbar-date"></span>
-        <span class="chip chip-amber" id="topbar-alerts" style="display:none"></span>
+      <div class="tb-title" id="tb-title">Übersicht</div>
+      <div class="tb-right">
+        <span class="chip cg" id="tb-date"></span>
+        <span class="chip ca" id="tb-warn" style="display:none"></span>
       </div>
     </div>
-    <div class="content-area" id="content-area">
-      <div class="loading-state"><div class="loading-spinner"></div>Laden…</div>
+    <div class="content" id="content">
+      <div class="load"><div class="spin"></div>Laden…</div>
     </div>
   </main>
+</div>
 
-</div><!-- /app-shell -->
-
-<!-- ═══════════════════ MODAL ═══════════════════════════════════ -->
-<div class="modal-overlay" id="modal-overlay" onclick="MODAL.close(event)">
-  <div class="modal-box" id="modal-box">
-    <div class="modal-title" id="modal-title"></div>
-    <div id="modal-body"></div>
-    <div class="modal-footer" id="modal-footer"></div>
+<!-- MODAL -->
+<div class="mo" id="modal" onclick="M.close(event)">
+  <div class="mb">
+    <div class="mt" id="m-title"></div>
+    <div id="m-body"></div>
+    <div class="mf" id="m-foot"></div>
   </div>
 </div>
 
-<!-- ═══════════════════ JAVASCRIPT ══════════════════════════════ -->
 <script>
-/* ──────────────── UTILS ──────────────── */
-const fmt = {
-  date: (d) => d ? new Date(d).toLocaleDateString('de-CH') : '–',
-  chf:  (n) => 'CHF ' + Number(n||0).toLocaleString('de-CH', {minimumFractionDigits:2, maximumFractionDigits:2}),
-  ha:   (n) => Number(n||0).toLocaleString('de-CH') + ' ha',
+/* ── UTILS ── */
+const fmt={
+  date:d=>d?new Date(d).toLocaleDateString('de-CH'):'–',
+  chf:n=>'CHF '+Number(n||0).toLocaleString('de-CH',{minimumFractionDigits:2,maximumFractionDigits:2}),
+  ha:n=>Number(n||0).toFixed(1)+' ha',
+  num:n=>Number(n||0).toLocaleString('de-CH'),
 };
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 
-function esc(s) {
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-/* ──────────────── AUTH MODULE ──────────────── */
-const AUTH = {
-  async login() {
-    const email = document.getElementById('login-email').value.trim();
-    const pw    = document.getElementById('login-pw').value;
-    const errEl = document.getElementById('auth-error');
-    errEl.style.display = 'none';
-    try {
-      await window._signIn(email, pw);
-    } catch(e) {
-      errEl.style.display = 'block';
-      errEl.textContent = 'Anmeldung fehlgeschlagen: ' + (e.code === 'auth/invalid-credential' ? 'E-Mail oder Passwort falsch.' : e.message);
-    }
+const AUTH={
+  async login(){
+    const e=document.getElementById('li-email').value.trim();
+    const p=document.getElementById('li-pw').value;
+    const el=document.getElementById('auth-err');
+    el.style.display='none';
+    try{await window._signIn(e,p)}
+    catch(err){el.style.display='block';el.textContent='Fehler: '+(err.code==='auth/invalid-credential'?'E-Mail oder Passwort falsch.':err.message)}
   },
-  async logout() {
-    await window._signOut();
-  }
+  async logout(){await window._signOut()}
 };
-
-/* Allow Enter-key on login */
-document.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && document.getElementById('auth-screen').style.display !== 'none') AUTH.login();
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&document.getElementById('auth-screen').style.display!=='none')AUTH.login();
 });
 
-/* ──────────────── MODAL MODULE ──────────────── */
-const MODAL = {
-  open(title, bodyHTML, footerHTML) {
-    document.getElementById('modal-title').textContent = title;
-    document.getElementById('modal-body').innerHTML = bodyHTML;
-    document.getElementById('modal-footer').innerHTML = footerHTML ||
-      `<button class="btn-secondary" onclick="MODAL.close()">Abbrechen</button>`;
-    document.getElementById('modal-overlay').classList.add('open');
+const M={
+  open(title,body,foot){
+    document.getElementById('m-title').textContent=title;
+    document.getElementById('m-body').innerHTML=body;
+    document.getElementById('m-foot').innerHTML=foot||'<button class="btn-sec" onclick="M.close()">Abbrechen</button>';
+    document.getElementById('modal').classList.add('open');
   },
-  close(e) {
-    if (!e || e.target === document.getElementById('modal-overlay'))
-      document.getElementById('modal-overlay').classList.remove('open');
+  close(e){if(!e||e.target===document.getElementById('modal'))document.getElementById('modal').classList.remove('open')}
+};
+
+document.getElementById('tb-date').textContent=new Date().toLocaleDateString('de-CH',{day:'2-digit',month:'long',year:'numeric'});
+
+/* ── FIRESTORE ── */
+async function fsLoad(sub){
+  if(!window._uid)return[];
+  const s=await window._getDocs(window._col(`benutzer/${window._uid}/${sub}`));
+  return s.docs.map(d=>({id:d.id,...d.data()}));
+}
+async function fsSave(sub,id,data){
+  await window._set(window._doc(`benutzer/${window._uid}/${sub}`,id),{...data,updAt:window._ts()});
+}
+async function fsDel(sub,id){await window._del(window._doc(`benutzer/${window._uid}/${sub}`,id))}
+function uid2(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+
+/* ── APP ── */
+const TABS={
+  uebersicht:{t:'Übersicht',r:TAB_UEBERSICHT},
+  kalender:{t:'Kalender & Aufgaben',r:TAB_KALENDER},
+  tagesrapporte:{t:'Tagesrapporte',r:TAB_TAGESRAPPORTE},
+  felder:{t:'Felder',r:TAB_FELDER},
+  tiere:{t:'Tiere',r:TAB_TIERE},
+  maschinen:{t:'Maschinen & Geräte',r:TAB_MASCHINEN},
+  lager:{t:'Lager & Inventar',r:TAB_LAGER},
+  mitarbeiter:{t:'Mitarbeiter',r:TAB_MITARBEITER},
+  rechnungen:{t:'Rechnungen',r:TAB_RECHNUNGEN},
+  produkte:{t:'Marktplatz',r:TAB_PRODUKTE},
+  buchhaltung:{t:'Buchhaltung',r:TAB_BUCHHALTUNG},
+  wetter:{t:'Wetter – Open-Meteo',r:TAB_WETTER},
+  erinnerungen:{t:'Erinnerungen',r:TAB_ERINNERUNGEN},
+  beratung:{t:'Beratung',r:TAB_BERATUNG},
+  einstellungen:{t:'Einstellungen',r:TAB_EINSTELLUNGEN},
+};
+const APP={
+  go(name){
+    document.querySelectorAll('.ni').forEach(el=>el.classList.toggle('active',el.dataset.tab===name));
+    const cfg=TABS[name];if(!cfg)return;
+    document.getElementById('tb-title').textContent=cfg.t;
+    const c=document.getElementById('content');
+    c.innerHTML='<div class="load"><div class="spin"></div>Laden…</div>';
+    cfg.r(c);
   }
 };
 
-/* ──────────────── APP MODULE ──────────────── */
-const APP = {
-  currentTab: null,
-  tabs: {
-    'uebersicht': { title: 'Übersicht',    render: TAB_UEBERSICHT },
-    'felder':     { title: 'Felder',       render: TAB_FELDER },
-    'tiere':      { title: 'Tiere',        render: TAB_TIERE },
-    'maschinen':  { title: 'Maschinen',    render: TAB_MASCHINEN },
-    'produkte':   { title: 'Marktplatz',   render: TAB_PRODUKTE },
-    'berichte':   { title: 'Berichte',     render: TAB_BERICHTE },
-    'beratung':   { title: 'Beratung',     render: TAB_BERATUNG },
-    'einstellungen': { title: 'Einstellungen', render: TAB_EINSTELLUNGEN },
-  },
-  loadTab(name) {
-    this.currentTab = name;
-    // Update nav
-    document.querySelectorAll('.nav-item').forEach(el => {
-      el.classList.toggle('active', el.dataset.tab === name);
-    });
-    // Update topbar
-    const cfg = this.tabs[name];
-    if (cfg) {
-      document.getElementById('topbar-title').textContent = cfg.title;
-      const area = document.getElementById('content-area');
-      area.innerHTML = '<div class="loading-state"><div class="loading-spinner"></div>Laden…</div>';
-      cfg.render(area);
-    }
-  }
-};
-
-/* Set date in topbar */
-document.getElementById('topbar-date').textContent =
-  new Date().toLocaleDateString('de-CH', {day:'2-digit', month:'long', year:'numeric'});
-
-/* ──────────────── FIRESTORE HELPERS ──────────────── */
-async function fsLoad(subcol) {
-  if (!window._uid) return [];
-  const snap = await window._getDocs(window._col(`benutzer/${window._uid}/${subcol}`));
-  return snap.docs.map(d => ({id: d.id, ...d.data()}));
-}
-async function fsSave(subcol, id, data) {
-  await window._set(window._doc(`benutzer/${window._uid}/${subcol}`, id), {
-    ...data, updatedAt: window._ts()
-  });
-}
-async function fsDel(subcol, id) {
-  await window._del(window._doc(`benutzer/${window._uid}/${subcol}`, id));
-}
-function newId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
-
-/* ═══════════════ TAB: ÜBERSICHT ════════════════════════════════ */
-async function TAB_UEBERSICHT(container) {
-  const [felder, tiere, maschinen, produkte] = await Promise.all([
-    fsLoad('felder'), fsLoad('tiere'), fsLoad('maschinen'), fsLoad('produkte')
+/* ═══════ ÜBERSICHT ═══════ */
+async function TAB_UEBERSICHT(c){
+  const[felder,tiere,maschinen,erinnerungen,rapporte]=await Promise.all([
+    fsLoad('felder'),fsLoad('tiere'),fsLoad('maschinen'),fsLoad('erinnerungen'),fsLoad('tagesrapporte')
   ]);
-  const warnings = maschinen.filter(m => m.status === 'wartung').length + felder.filter(f => parseInt(f.naehrstoff||100)<65).length;
-  if (warnings > 0) {
-    const el = document.getElementById('topbar-alerts');
-    el.textContent = `${warnings} Warnungen`; el.style.display = '';
-  }
-
-  container.innerHTML = `
-  <div id="tab-uebersicht">
-    <div class="metric-grid">
-      <div class="metric-card">
-        <div class="metric-label">Felder aktiv</div>
-        <div class="metric-value">${felder.length}</div>
-        <div class="metric-sub">${felder.reduce((a,f)=>a+Number(f.groesse||0),0).toFixed(1)} ha gesamt</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">Tiere total</div>
-        <div class="metric-value">${tiere.reduce((a,t)=>a+Number(t.anzahl||0),0)}</div>
-        <div class="metric-sub metric-up">${tiere.length} Gruppen</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">Produkte im Markt</div>
-        <div class="metric-value">${produkte.length}</div>
-        <div class="metric-sub">${fmt.chf(produkte.reduce((a,p)=>a+(Number(p.preis||0)*Number(p.menge||0)),0))}</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">Maschinen</div>
-        <div class="metric-value">${maschinen.length}</div>
-        <div class="metric-sub ${maschinen.filter(m=>m.status==='wartung').length>0?'metric-down':'metric-up'}">
-          ${maschinen.filter(m=>m.status==='wartung').length} Wartung fällig
-        </div>
-      </div>
+  const warns=maschinen.filter(m=>m.status==='wartung').length+felder.filter(f=>+f.naehrstoff<65).length;
+  const heute=new Date().toISOString().split('T')[0];
+  const faellig=erinnerungen.filter(e=>e.datum&&e.datum<=heute&&!e.erledigt);
+  if(warns>0||faellig.length>0){const w=document.getElementById('tb-warn');w.textContent=`${warns+faellig.length} Hinweise`;w.style.display=''}
+  const haGes=felder.reduce((a,f)=>a+Number(f.groesse||0),0);
+  const tierTotal=tiere.reduce((a,t)=>a+Number(t.anzahl||0),0);
+  c.innerHTML=`
+  <div class="mgrid">
+    <div class="mc"><div class="ml">Felder</div><div class="mv">${felder.length}</div><div class="ms">${haGes.toFixed(1)} ha</div></div>
+    <div class="mc"><div class="ml">Tiere</div><div class="mv">${tierTotal}</div><div class="ms">${tiere.length} Gruppen</div></div>
+    <div class="mc"><div class="ml">Rapporte heute</div><div class="mv">${rapporte.filter(r=>r.datum===heute).length}</div><div class="ms">von ${rapporte.length} total</div></div>
+    <div class="mc"><div class="ml">Maschinen Wartung</div><div class="mv ${warns>0?'md':'mu'}">${maschinen.filter(m=>m.status==='wartung').length}</div><div class="ms">von ${maschinen.length} total</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:14px;margin-bottom:14px">
+    <div class="card">
+      <div class="sec-hdr"><span class="sec-t">Feldübersicht</span></div>
+      ${felder.length===0?'<p style="font-size:13px;color:var(--muted)">Keine Felder erfasst.</p>':felder.map(f=>{const p=Math.min(100,+f.naehrstoff||75);const col=p>=75?'var(--g600)':p>=55?'var(--a600)':'var(--r600)';return`<div class="prow"><span class="pname">${esc(f.name)} (${esc(f.kultur||'–')})</span><div class="pbw"><div class="pf" style="width:${p}%;background:${col}"></div></div><span class="pv">${p}%</span></div>`}).join('')}
     </div>
-    <div class="grid2">
-      <div class="card">
-        <div class="section-header"><span class="section-title">Feldübersicht</span></div>
-        ${felder.length === 0 ? '<p style="font-size:13px;color:var(--text-muted);">Noch keine Felder erfasst.</p>' :
-          felder.map(f => {
-            const pct = Math.min(100, Math.max(0, parseInt(f.naehrstoff||75)));
-            const col = pct >= 75 ? 'var(--green-600)' : pct >= 55 ? 'var(--amber-600)' : 'var(--red-600)';
-            return `<div class="progress-row">
-              <span class="progress-name">${esc(f.name)} (${esc(f.kultur||'–')})</span>
-              <div class="progress-bar-wrap"><div class="progress-fill" style="width:${pct}%;background:${col}"></div></div>
-              <span class="progress-val">${pct}%</span>
-            </div>`;
-          }).join('')}
-      </div>
-      <div class="card">
-        <div class="section-header"><span class="section-title">Wettervorhersage</span></div>
-        <div class="weather-days">
-          <div class="w-day-card today">
-            <div class="w-day-label">Heute</div>
-            <div class="w-icon">⛅</div>
-            <div class="w-temp">8°C</div>
-            <div class="w-prec">2 mm</div>
-          </div>
-          <div class="w-day-card">
-            <div class="w-day-label">Morgen</div>
-            <div class="w-icon">🌧</div>
-            <div class="w-temp">6°C</div>
-            <div class="w-prec">14 mm</div>
-          </div>
-          <div class="w-day-card">
-            <div class="w-day-label">Übermorgen</div>
-            <div class="w-icon">☀️</div>
-            <div class="w-temp">11°C</div>
-            <div class="w-prec">0 mm</div>
-          </div>
-        </div>
-        <div class="recommend-box">
-          <div class="recommend-label">KI-Empfehlung</div>
-          <div class="recommend-text">Düngerausbringung bis Mittwoch verschieben (Regen erwartet)</div>
-        </div>
-      </div>
+    <div class="card" id="wetter-mini">
+      <div class="sec-hdr"><span class="sec-t">Wetter heute</span><span style="font-size:11px;color:var(--g700);cursor:pointer" onclick="APP.go('wetter')">Details →</span></div>
+      <div class="load"><div class="spin"></div>Lade Open-Meteo…</div>
     </div>
-    <div class="grid3" style="margin-top:16px">
-      <div class="card">
-        <div class="section-header"><span class="section-title">Tiergesundheit</span></div>
-        ${tiere.length === 0 ? '<p style="font-size:13px;color:var(--text-muted);">Noch keine Tiere erfasst.</p>' :
-          tiere.map(t=>{
-            const h = parseInt(t.gesundheit||90);
-            const col = h>=80?'var(--green-600)':h>=60?'var(--amber-600)':'var(--red-600)';
-            return `<div class="progress-row">
-              <span class="progress-name">${esc(t.art)}</span>
-              <div class="progress-bar-wrap"><div class="progress-fill" style="width:${h}%;background:${col}"></div></div>
-              <span class="progress-val">${h}%</span>
-            </div>`;
-          }).join('')}
-      </div>
-      <div class="card">
-        <div class="section-header"><span class="section-title">Maschinen-Status</span></div>
-        ${maschinen.length === 0 ? '<p style="font-size:13px;color:var(--text-muted);">Noch keine Maschinen erfasst.</p>' :
-          maschinen.slice(0,5).map(m=>`
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">
-            <span style="font-size:12px;flex:1">${esc(m.typ)}</span>
-            <span class="status-badge ${m.status==='ok'?'st-ok':m.status==='wartung'?'st-warn':'st-info'}">${esc(m.status||'ok')}</span>
-          </div>`).join('')}
-      </div>
-      <div class="card">
-        <div class="section-header"><span class="section-title">Benachrichtigungen</span></div>
-        <div class="alert-list">
-          ${warnings === 0 ?
-            `<div class="alert-item alert-ok"><div class="alert-dot dot-ok"></div><div class="alert-text">Alles in Ordnung</div></div>` :
-            `${maschinen.filter(m=>m.status==='wartung').map(m=>`
-              <div class="alert-item alert-warn"><div class="alert-dot dot-warn"></div>
-              <div><div class="alert-text">${esc(m.typ)} – Wartung fällig</div></div></div>`).join('')}
-            ${felder.filter(f=>parseInt(f.naehrstoff||100)<65).map(f=>`
-              <div class="alert-item alert-err"><div class="alert-dot dot-err"></div>
-              <div><div class="alert-text">${esc(f.name)} – Nährstoff niedrig</div></div></div>`).join('')}`
-          }
-        </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
+    <div class="card">
+      <div class="sec-hdr"><span class="sec-t">Tiergesundheit</span></div>
+      ${tiere.length===0?'<p style="font-size:13px;color:var(--muted)">Keine Tiere.</p>':tiere.map(t=>{const h=+t.gesundheit||90;const col=h>=80?'var(--g600)':h>=60?'var(--a600)':'var(--r600)';return`<div class="prow"><span class="pname">${esc(t.art)}</span><div class="pbw"><div class="pf" style="width:${h}%;background:${col}"></div></div><span class="pv">${h}%</span></div>`}).join('')}
+    </div>
+    <div class="card">
+      <div class="sec-hdr"><span class="sec-t">Maschinen</span></div>
+      ${maschinen.length===0?'<p style="font-size:13px;color:var(--muted)">Keine Maschinen.</p>':maschinen.slice(0,5).map(m=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px"><span style="font-size:12px;flex:1">${esc(m.typ)}</span><span class="sb ${m.status==='ok'?'s-ok':m.status==='wartung'?'s-wa':'s-er'}">${esc(m.status||'ok')}</span></div>`).join('')}
+    </div>
+    <div class="card">
+      <div class="sec-hdr"><span class="sec-t">Offene Erinnerungen</span></div>
+      <div class="al">
+        ${faellig.length===0?'<div class="ai ai-ok"><div class="ad dok"></div><div class="at">Alles erledigt</div></div>':faellig.slice(0,4).map(e=>`<div class="ai ai-wa"><div class="ad dwa"></div><div><div class="at">${esc(e.titel)}</div><div class="atime">${fmt.date(e.datum)}</div></div></div>`).join('')}
       </div>
     </div>
   </div>`;
+  WETTER.loadMini();
 }
 
-/* ═══════════════ TAB: FELDER ════════════════════════════════ */
-async function TAB_FELDER(container) {
-  const felder = await fsLoad('felder');
-  container.innerHTML = `
-    <div class="section-header">
-      <span class="section-title">Felder verwalten</span>
-      <button class="btn-add" onclick="FELDER.openNew()">+ Neues Feld</button>
-    </div>
-    <div class="card" style="padding:0;overflow:hidden">
-      <table class="data-table">
-        <thead><tr>
-          <th>Name</th><th>Grösse</th><th>Kultur</th><th>Boden</th><th>Nährstoff</th><th>Bewässerung</th><th>Status</th><th></th>
-        </tr></thead>
-        <tbody>
-          ${felder.length === 0 ? `<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--text-muted)">Noch keine Felder erfasst.</td></tr>` :
-            felder.map(f => {
-              const pct = parseInt(f.naehrstoff||75);
-              const st = pct>=75?'st-ok':pct>=55?'st-warn':'st-err';
-              const stl = pct>=75?'OK':pct>=55?'Mittel':'Niedrig';
-              return `<tr>
-                <td><strong>${esc(f.name)}</strong></td>
-                <td>${fmt.ha(f.groesse)}</td>
-                <td>${esc(f.kultur||'–')}</td>
-                <td>${esc(f.boden||'–')}</td>
-                <td><span class="status-badge ${st}">${pct}% (${stl})</span></td>
-                <td>${esc(f.bewaesserung||'–')}</td>
-                <td><span class="status-badge st-ok">${esc(f.status||'Aktiv')}</span></td>
-                <td><button class="btn-danger" onclick="FELDER.del('${f.id}')">Löschen</button></td>
-              </tr>`;
-            }).join('')}
-        </tbody>
-      </table>
-    </div>`;
-}
-
-const FELDER = {
-  openNew() {
-    MODAL.open('Neues Feld erfassen', `
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Name *</label><input class="form-input" id="f-name" placeholder="Nordfeld"></div>
-        <div class="form-group"><label class="form-label">Grösse (ha)</label><input class="form-input" id="f-groesse" type="number" step="0.1" placeholder="5.5"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Kulturpflanze</label><input class="form-input" id="f-kultur" placeholder="Weizen, Mais…"></div>
-        <div class="form-group"><label class="form-label">Bodenart</label>
-          <select class="form-select" id="f-boden">
-            <option value="">– wählen –</option>
-            <option>Sandiger Lehm</option><option>Tonboden</option><option>Humus</option><option>Lössboden</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Nährstoff % (0-100)</label><input class="form-input" id="f-naehrstoff" type="number" min="0" max="100" placeholder="75"></div>
-        <div class="form-group"><label class="form-label">Bewässerung</label>
-          <select class="form-select" id="f-bewaesserung">
-            <option value="">– wählen –</option>
-            <option>Tröpfchenbewässerung</option><option>Beregnungsanlage</option><option>Natürlicher Regen</option>
-          </select>
-        </div>
-      </div>`,
-      `<button class="btn-secondary" onclick="MODAL.close()">Abbrechen</button>
-       <button class="btn-add" onclick="FELDER.save()">Speichern</button>`
-    );
+/* ═══════ WETTER (Open-Meteo – kostenlos, kein API-Key) ═══════ */
+const WETTER={
+  WMO:{0:'☀️ Klar',1:'🌤 Überwiegend klar',2:'⛅ Teilbewölkt',3:'☁️ Bewölkt',45:'🌫 Nebel',48:'🌫 Eisnebel',51:'🌦 Leichter Niesel',53:'🌦 Niesel',55:'🌦 Starker Niesel',61:'🌧 Leichter Regen',63:'🌧 Regen',65:'🌧 Starker Regen',71:'🌨 Leichter Schnee',73:'🌨 Schnee',75:'❄️ Starker Schnee',80:'🌦 Regenschauer',81:'🌧 Starke Schauer',82:'⛈ Heftige Schauer',85:'🌨 Schneeschauer',95:'⛈ Gewitter',96:'⛈ Gewitter m. Hagel',99:'⛈ Starkes Gewitter'},
+  icon(c){const e=this.WMO[c]||'🌡';return e.split(' ')[0]},
+  desc(c){const e=this.WMO[c]||'–';return e.split(' ').slice(1).join(' ')},
+  async fetch(lat=47.37,lon=8.54){
+    const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode,windspeed_10m_max&current_weather=true&timezone=Europe%2FZurich&forecast_days=7`;
+    const r=await fetch(url);return await r.json();
   },
-  async save() {
-    const name = document.getElementById('f-name').value.trim();
-    if (!name) { alert('Name ist erforderlich.'); return; }
-    const id = newId();
-    await fsSave('felder', id, {
-      name, groesse: document.getElementById('f-groesse').value,
-      kultur: document.getElementById('f-kultur').value,
-      boden: document.getElementById('f-boden').value,
-      naehrstoff: document.getElementById('f-naehrstoff').value || 75,
-      bewaesserung: document.getElementById('f-bewaesserung').value,
-      status: 'Aktiv'
-    });
-    MODAL.close(); APP.loadTab('felder');
-  },
-  async del(id) {
-    if (confirm('Feld wirklich löschen?')) { await fsDel('felder', id); APP.loadTab('felder'); }
+  async loadMini(){
+    try{
+      const d=await this.fetch();
+      const cw=d.current_weather;
+      const mini=document.getElementById('wetter-mini');
+      if(!mini)return;
+      const days=['So','Mo','Di','Mi','Do','Fr','Sa'];
+      const heute=new Date().getDay();
+      mini.innerHTML=`
+        <div class="sec-hdr"><span class="sec-t">Wetter heute</span><span style="font-size:11px;color:var(--g700);cursor:pointer" onclick="APP.go('wetter')">Details →</span></div>
+        <div class="w-now">
+          <div class="wn"><div class="wn-icon">${this.icon(cw.weathercode)}</div><div class="wn-val">${Math.round(cw.temperature)}°C</div><div class="wn-lbl">Aktuell</div></div>
+          <div class="wn"><div class="wn-icon">🌡</div><div class="wn-val">${Math.round(d.daily.temperature_2m_max[0])}° / ${Math.round(d.daily.temperature_2m_min[0])}°</div><div class="wn-lbl">Max / Min</div></div>
+          <div class="wn"><div class="wn-icon">💧</div><div class="wn-val">${d.daily.precipitation_sum[0].toFixed(1)} mm</div><div class="wn-lbl">Niederschlag</div></div>
+          <div class="wn"><div class="wn-icon">💨</div><div class="wn-val">${Math.round(cw.windspeed)} km/h</div><div class="wn-lbl">Wind</div></div>
+        </div>
+        <div class="w-grid" style="grid-template-columns:repeat(4,1fr)">
+          ${d.daily.time.slice(1,5).map((t,i)=>{
+            const dd=new Date(t);
+            return`<div class="wd"><div class="wd-day">${days[dd.getDay()]}</div><div class="wd-icon">${this.icon(d.daily.weathercode[i+1])}</div><div class="wd-t">${Math.round(d.daily.temperature_2m_max[i+1])}°</div><div class="wd-p">${d.daily.precipitation_sum[i+1].toFixed(1)}mm</div></div>`;
+          }).join('')}
+        </div>
+        ${d.daily.precipitation_sum[1]>5?'<div class="rec-box"><div class="rec-l">KI-Empfehlung</div><div class="rec-t">Morgen Regen erwartet ('+d.daily.precipitation_sum[1].toFixed(1)+' mm) – Feldarbeiten heute einplanen</div></div>':''}
+      `;
+    }catch(e){const m=document.getElementById('wetter-mini');if(m)m.innerHTML='<p style="font-size:12px;color:var(--muted)">Wetter nicht verfügbar (offline?)</p>'}
   }
 };
 
-/* ═══════════════ TAB: TIERE ════════════════════════════════ */
-async function TAB_TIERE(container) {
-  const tiere = await fsLoad('tiere');
-  container.innerHTML = `
-    <div class="section-header">
-      <span class="section-title">Tierbestand verwalten</span>
-      <button class="btn-add" onclick="TIERE.openNew()">+ Neue Tiergruppe</button>
-    </div>
-    <div class="card" style="padding:0;overflow:hidden">
-      <table class="data-table">
-        <thead><tr>
-          <th>Tierart</th><th>Anzahl</th><th>Gesundheit</th><th>Futterqualität</th><th>Nächste Impfung</th><th>Notizen</th><th></th>
-        </tr></thead>
-        <tbody>
-          ${tiere.length === 0 ? `<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--text-muted)">Noch keine Tiere erfasst.</td></tr>` :
-            tiere.map(t => {
-              const h = parseInt(t.gesundheit||90);
-              const st = h>=80?'st-ok':h>=60?'st-warn':'st-err';
-              return `<tr>
-                <td><strong>${esc(t.art)}</strong></td>
-                <td>${esc(t.anzahl||'–')}</td>
-                <td><span class="status-badge ${st}">${h}%</span></td>
-                <td><span class="status-badge st-info">${esc(t.futter||'–')}</span></td>
-                <td>${fmt.date(t.impfung)}</td>
-                <td style="color:var(--text-muted);font-size:12px">${esc(t.notizen||'–')}</td>
-                <td><button class="btn-danger" onclick="TIERE.del('${t.id}')">Löschen</button></td>
-              </tr>`;
-            }).join('')}
-        </tbody>
-      </table>
-    </div>`;
+/* ═══════ TAB WETTER DETAIL ═══════ */
+async function TAB_WETTER(c){
+  c.innerHTML='<div class="load"><div class="spin"></div>Lade Open-Meteo (kostenlos, kein API-Key)…</div>';
+  try{
+    const d=await WETTER.fetch();
+    const cw=d.current_weather;
+    const days=['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
+    c.innerHTML=`
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+        <span class="chip cg">Open-Meteo API</span>
+        <span class="chip cb">Zürich / Kloten Region</span>
+        <span style="font-size:11px;color:var(--muted)">Kostenlos, kein API-Key, Open-Source</span>
+      </div>
+      <div class="mgrid" style="margin-bottom:18px">
+        <div class="mc"><div class="ml">Jetzt</div><div class="mv">${Math.round(cw.temperature)}°C</div><div class="ms">${WETTER.icon(cw.weathercode)} ${WETTER.desc(cw.weathercode)}</div></div>
+        <div class="mc"><div class="ml">Heute Max/Min</div><div class="mv" style="font-size:18px">${Math.round(d.daily.temperature_2m_max[0])}° / ${Math.round(d.daily.temperature_2m_min[0])}°</div><div class="ms">Celsius</div></div>
+        <div class="mc"><div class="ml">Niederschlag</div><div class="mv">${d.daily.precipitation_sum[0].toFixed(1)}<span style="font-size:14px">mm</span></div><div class="ms">Heute</div></div>
+        <div class="mc"><div class="ml">Wind</div><div class="mv">${Math.round(d.daily.windspeed_10m_max[0])}<span style="font-size:14px">km/h</span></div><div class="ms">Max heute</div></div>
+      </div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="sec-hdr"><span class="sec-t">7-Tage Vorschau</span></div>
+        <div class="w-grid" style="grid-template-columns:repeat(7,1fr)">
+          ${d.daily.time.map((t,i)=>{
+            const dd=new Date(t);
+            const isToday=i===0;
+            return`<div class="wd ${isToday?'today':''}">
+              <div class="wd-day">${isToday?'Heute':days[dd.getDay()].slice(0,2)}</div>
+              <div class="wd-icon">${WETTER.icon(d.daily.weathercode[i])}</div>
+              <div class="wd-t">${Math.round(d.daily.temperature_2m_max[i])}°</div>
+              <div class="wd-p">${d.daily.precipitation_sum[i].toFixed(1)}mm</div>
+              <div class="wd-w">${Math.round(d.daily.windspeed_10m_max[i])}km/h</div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+      <div class="card">
+        <div class="sec-hdr"><span class="sec-t">Feldarbeits-Empfehlungen</span></div>
+        <div class="al">
+          ${d.daily.time.map((t,i)=>{
+            const prec=d.daily.precipitation_sum[i];
+            const temp=d.daily.temperature_2m_max[i];
+            const wind=d.daily.windspeed_10m_max[i];
+            const dd=new Date(t);
+            const tag=i===0?'Heute':days[dd.getDay()];
+            let cls='ai-ok',dot='dok',txt='Gute Bedingungen für Feldarbeit';
+            if(prec>10){cls='ai-er';dot='der';txt='Starker Regen – keine Feldarbeit'}
+            else if(prec>3){cls='ai-wa';dot='dwa';txt='Leichter Regen – Dünger/Spritzen verschieben'}
+            else if(wind>40){cls='ai-wa';dot='dwa';txt='Starker Wind – kein Spritzen empfohlen'}
+            else if(temp<2){cls='ai-in';dot='din';txt='Frostgefahr – empfindliche Kulturen schützen'}
+            return`<div class="ai ${cls}"><div class="ad ${dot}"></div><div><div class="at"><strong>${tag}:</strong> ${txt}</div><div class="atime">${Math.round(d.daily.temperature_2m_max[i])}°C · ${prec.toFixed(1)}mm · ${Math.round(wind)}km/h Wind</div></div></div>`;
+          }).join('')}
+        </div>
+      </div>`;
+  }catch(e){c.innerHTML='<div class="card"><p>Wetterdaten konnten nicht geladen werden. Internetverbindung prüfen.</p></div>'}
 }
 
-const TIERE = {
-  openNew() {
-    MODAL.open('Neue Tiergruppe', `
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Tierart *</label>
-          <select class="form-select" id="t-art">
-            <option value="">– wählen –</option>
-            <option>Rinder</option><option>Schweine</option><option>Schafe</option><option>Geflügel</option><option>Ziegen</option><option>Pferde</option>
-          </select>
-        </div>
-        <div class="form-group"><label class="form-label">Anzahl</label><input class="form-input" id="t-anzahl" type="number" placeholder="40"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Gesundheit % (0-100)</label><input class="form-input" id="t-gesundheit" type="number" min="0" max="100" placeholder="90"></div>
-        <div class="form-group"><label class="form-label">Futterqualität</label>
-          <select class="form-select" id="t-futter">
-            <option value="">– wählen –</option><option>Bio</option><option>Standard</option><option>Premium</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Nächste Impfung</label><input class="form-input" id="t-impfung" type="date"></div>
-        <div class="form-group"><label class="form-label">Notizen</label><input class="form-input" id="t-notizen" placeholder="Optional"></div>
-      </div>`,
-      `<button class="btn-secondary" onclick="MODAL.close()">Abbrechen</button>
-       <button class="btn-add" onclick="TIERE.save()">Speichern</button>`
-    );
-  },
-  async save() {
-    const art = document.getElementById('t-art').value;
-    if (!art) { alert('Tierart erforderlich.'); return; }
-    await fsSave('tiere', newId(), {
-      art, anzahl: document.getElementById('t-anzahl').value,
-      gesundheit: document.getElementById('t-gesundheit').value || 90,
-      futter: document.getElementById('t-futter').value,
-      impfung: document.getElementById('t-impfung').value,
-      notizen: document.getElementById('t-notizen').value
-    });
-    MODAL.close(); APP.loadTab('tiere');
-  },
-  async del(id) {
-    if (confirm('Tiergruppe wirklich löschen?')) { await fsDel('tiere', id); APP.loadTab('tiere'); }
-  }
-};
-
-/* ═══════════════ TAB: MASCHINEN ═══════════════════════════════ */
-async function TAB_MASCHINEN(container) {
-  const maschinen = await fsLoad('maschinen');
-  container.innerHTML = `
-    <div class="section-header">
-      <span class="section-title">Maschinen & Geräte</span>
-      <button class="btn-add" onclick="MASCHINEN.openNew()">+ Neue Maschine</button>
+/* ═══════ TAB KALENDER ═══════ */
+async function TAB_KALENDER(c){
+  const aufgaben=await fsLoad('aufgaben');
+  const now=new Date();
+  const year=now.getFullYear(),month=now.getMonth();
+  const days=['Mo','Di','Mi','Do','Fr','Sa','So'];
+  const first=new Date(year,month,1);
+  const last=new Date(year,month+1,0);
+  let cells=[];
+  let startDay=(first.getDay()+6)%7;
+  for(let i=0;i<startDay;i++)cells.push(null);
+  for(let d=1;d<=last.getDate();d++)cells.push(d);
+  const katFarbe={Aussaat:'kal-dot',Düngung:'kal-dot-a',Ernte:'kal-dot',Impfung:'kal-dot-r',Wartung:'kal-dot-a',Sonstiges:'kal-dot-b'};
+  c.innerHTML=`
+    <div class="sec-hdr">
+      <span class="sec-t">${now.toLocaleDateString('de-CH',{month:'long',year:'numeric'})}</span>
+      <button class="btn-add" onclick="KALENDER.openNew()">+ Aufgabe</button>
     </div>
+    <div class="card" style="margin-bottom:14px">
+      <div class="kal-grid">
+        ${days.map(d=>`<div class="kal-day-hdr">${d}</div>`).join('')}
+        ${cells.map((d,i)=>{
+          if(!d)return'<div></div>';
+          const dateStr=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+          const isToday=dateStr===new Date().toISOString().split('T')[0];
+          const dayTasks=aufgaben.filter(a=>a.datum===dateStr);
+          return`<div class="kal-cell ${isToday?'today':''}">
+            <div class="kal-num" style="${isToday?'color:var(--g700);font-weight:600':''}">${d}</div>
+            ${dayTasks.slice(0,2).map(t=>`<div class="${katFarbe[t.kategorie]||'kal-dot'}">${esc(t.titel)}</div>`).join('')}
+            ${dayTasks.length>2?`<div style="font-size:9px;color:var(--muted)">+${dayTasks.length-2}</div>`:''}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+    <div class="sec-hdr"><span class="sec-t">Alle Aufgaben</span></div>
     <div class="card" style="padding:0;overflow:hidden">
-      <table class="data-table">
-        <thead><tr>
-          <th>Typ</th><th>Marke</th><th>Modell</th><th>Jahr</th><th>Status</th><th>Letzte Wartung</th><th>Nächste Wartung</th><th></th>
-        </tr></thead>
+      <table class="dt">
+        <thead><tr><th>Aufgabe</th><th>Kategorie</th><th>Datum</th><th>Feld/Bereich</th><th>Status</th><th></th></tr></thead>
         <tbody>
-          ${maschinen.length === 0 ? `<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--text-muted)">Noch keine Maschinen erfasst.</td></tr>` :
-            maschinen.map(m => {
-              const stmap = {ok:'st-ok',wartung:'st-warn',reparatur:'st-err',verfuegbar:'st-info'};
-              return `<tr>
-                <td><strong>${esc(m.typ)}</strong></td>
-                <td>${esc(m.marke||'–')}</td>
-                <td>${esc(m.modell||'–')}</td>
-                <td>${esc(m.baujahr||'–')}</td>
-                <td><span class="status-badge ${stmap[m.status]||'st-info'}">${esc(m.status||'ok')}</span></td>
-                <td>${fmt.date(m.wartungLetzt)}</td>
-                <td>${fmt.date(m.wartungNaechst)}</td>
-                <td><button class="btn-danger" onclick="MASCHINEN.del('${m.id}')">Löschen</button></td>
-              </tr>`;
-            }).join('')}
-        </tbody>
-      </table>
-    </div>`;
-}
-
-const MASCHINEN = {
-  openNew() {
-    MODAL.open('Neue Maschine erfassen', `
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Typ *</label>
-          <select class="form-select" id="m-typ">
-            <option value="">– wählen –</option>
-            <option>Traktor</option><option>Mähdrescher</option><option>Pflug</option><option>Sämaschine</option>
-            <option>Güllefass</option><option>Anhänger</option><option>Ladewagen</option><option>Sonstige</option>
-          </select>
-        </div>
-        <div class="form-group"><label class="form-label">Marke</label><input class="form-input" id="m-marke" placeholder="Massey Ferguson, John Deere…"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Modell</label><input class="form-input" id="m-modell" placeholder="MF 5710"></div>
-        <div class="form-group"><label class="form-label">Baujahr</label><input class="form-input" id="m-baujahr" type="number" placeholder="2018"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Status</label>
-          <select class="form-select" id="m-status">
-            <option value="ok">OK</option><option value="wartung">Wartung fällig</option>
-            <option value="reparatur">In Reparatur</option><option value="verfuegbar">Verfügbar</option>
-          </select>
-        </div>
-        <div class="form-group"><label class="form-label">Nächste Wartung</label><input class="form-input" id="m-wartung" type="date"></div>
-      </div>`,
-      `<button class="btn-secondary" onclick="MODAL.close()">Abbrechen</button>
-       <button class="btn-add" onclick="MASCHINEN.save()">Speichern</button>`
-    );
-  },
-  async save() {
-    const typ = document.getElementById('m-typ').value;
-    if (!typ) { alert('Typ erforderlich.'); return; }
-    await fsSave('maschinen', newId(), {
-      typ, marke: document.getElementById('m-marke').value,
-      modell: document.getElementById('m-modell').value,
-      baujahr: document.getElementById('m-baujahr').value,
-      status: document.getElementById('m-status').value,
-      wartungNaechst: document.getElementById('m-wartung').value,
-      wartungLetzt: new Date().toISOString().split('T')[0]
-    });
-    MODAL.close(); APP.loadTab('maschinen');
-  },
-  async del(id) {
-    if (confirm('Maschine wirklich löschen?')) { await fsDel('maschinen', id); APP.loadTab('maschinen'); }
-  }
-};
-
-/* ═══════════════ TAB: PRODUKTE / MARKTPLATZ ═════════════════ */
-async function TAB_PRODUKTE(container) {
-  const produkte = await fsLoad('produkte');
-  const total = produkte.reduce((a,p)=>a+(Number(p.preis||0)*Number(p.menge||0)),0);
-  container.innerHTML = `
-    <div class="section-header">
-      <span class="section-title">Marktplatz – Produkte</span>
-      <button class="btn-add" onclick="PRODUKTE.openNew()">+ Neues Produkt</button>
-    </div>
-    <div class="metric-grid" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:16px">
-      <div class="metric-card"><div class="metric-label">Produkte total</div><div class="metric-value">${produkte.length}</div></div>
-      <div class="metric-card"><div class="metric-label">Warenwert</div><div class="metric-value" style="font-size:18px">${fmt.chf(total)}</div></div>
-      <div class="metric-card"><div class="metric-label">MWST (2.5% Nahrung)</div><div class="metric-value" style="font-size:18px">${fmt.chf(total*0.025)}</div></div>
-    </div>
-    <div class="card" style="padding:0;overflow:hidden">
-      <table class="data-table">
-        <thead><tr>
-          <th>Produkt</th><th>Kategorie</th><th>Menge</th><th>Einheit</th><th>Preis/Einheit</th><th>Gesamtwert</th><th>Verfügbar bis</th><th></th>
-        </tr></thead>
-        <tbody>
-          ${produkte.length === 0 ? `<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--text-muted)">Noch keine Produkte erfasst.</td></tr>` :
-            produkte.map(p => `<tr>
-              <td><strong>${esc(p.name)}</strong></td>
-              <td>${esc(p.kategorie||'–')}</td>
-              <td>${esc(p.menge||'–')}</td>
-              <td>${esc(p.einheit||'–')}</td>
-              <td>${fmt.chf(p.preis)}</td>
-              <td>${fmt.chf(Number(p.preis||0)*Number(p.menge||0))}</td>
-              <td>${fmt.date(p.verfuegbarBis)}</td>
-              <td><button class="btn-danger" onclick="PRODUKTE.del('${p.id}')">Löschen</button></td>
+          ${aufgaben.length===0?`<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">Keine Aufgaben geplant.</td></tr>`:
+            aufgaben.sort((a,b)=>a.datum>b.datum?1:-1).map(a=>`<tr>
+              <td><strong>${esc(a.titel)}</strong></td>
+              <td><span class="sb s-in">${esc(a.kategorie||'–')}</span></td>
+              <td>${fmt.date(a.datum)}</td>
+              <td>${esc(a.bereich||'–')}</td>
+              <td><span class="sb ${a.erledigt?'s-ok':'s-wa'}">${a.erledigt?'Erledigt':'Offen'}</span></td>
+              <td style="display:flex;gap:5px">
+                <button class="btn-sec" style="padding:4px 8px;font-size:11px" onclick="KALENDER.toggle('${a.id}','${a.erledigt?'':'true'}')">✓</button>
+                <button class="btn-del" onclick="KALENDER.del('${a.id}')">×</button>
+              </td>
             </tr>`).join('')}
         </tbody>
       </table>
     </div>`;
 }
-
-const PRODUKTE = {
-  openNew() {
-    MODAL.open('Neues Produkt inserieren', `
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Produktname *</label><input class="form-input" id="p-name" placeholder="Bio-Weizen"></div>
-        <div class="form-group"><label class="form-label">Kategorie</label>
-          <select class="form-select" id="p-kat">
-            <option value="">– wählen –</option>
-            <option>Getreide</option><option>Gemüse</option><option>Obst</option><option>Milchprodukte</option>
-            <option>Fleisch</option><option>Eier</option><option>Sonstiges</option>
-          </select>
-        </div>
+const KALENDER={
+  openNew(){
+    M.open('Neue Aufgabe',`
+      <div class="frow">
+        <div class="fg"><label class="fl2">Titel *</label><input class="fi2" id="ka-t" placeholder="Raps düngen"></div>
+        <div class="fg"><label class="fl2">Kategorie</label>
+          <select class="fs" id="ka-k"><option>Aussaat</option><option>Düngung</option><option>Ernte</option><option>Impfung</option><option>Wartung</option><option>Sonstiges</option></select></div>
       </div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Menge</label><input class="form-input" id="p-menge" type="number" placeholder="500"></div>
-        <div class="form-group"><label class="form-label">Einheit</label>
-          <select class="form-select" id="p-einheit">
-            <option value="">– wählen –</option><option>kg</option><option>Liter</option><option>Stück</option><option>Tonnen</option><option>Kisten</option>
-          </select>
-        </div>
+      <div class="frow">
+        <div class="fg"><label class="fl2">Datum</label><input class="fi2" id="ka-d" type="date"></div>
+        <div class="fg"><label class="fl2">Feld / Bereich</label><input class="fi2" id="ka-b" placeholder="Nordfeld"></div>
       </div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Preis/Einheit (CHF)</label><input class="form-input" id="p-preis" type="number" step="0.05" placeholder="1.20"></div>
-        <div class="form-group"><label class="form-label">Verfügbar bis</label><input class="form-input" id="p-datum" type="date"></div>
-      </div>`,
-      `<button class="btn-secondary" onclick="MODAL.close()">Abbrechen</button>
-       <button class="btn-add" onclick="PRODUKTE.save()">Inserieren</button>`
+      <div class="fg"><label class="fl2">Notizen</label><textarea class="fta" id="ka-n" rows="2"></textarea></div>`,
+      `<button class="btn-sec" onclick="M.close()">Abbrechen</button><button class="btn-add" onclick="KALENDER.save()">Speichern</button>`
     );
   },
-  async save() {
-    const name = document.getElementById('p-name').value.trim();
-    if (!name) { alert('Name erforderlich.'); return; }
-    await fsSave('produkte', newId(), {
-      name, kategorie: document.getElementById('p-kat').value,
-      menge: document.getElementById('p-menge').value,
-      einheit: document.getElementById('p-einheit').value,
-      preis: document.getElementById('p-preis').value,
-      verfuegbarBis: document.getElementById('p-datum').value
-    });
-    MODAL.close(); APP.loadTab('produkte');
+  async save(){
+    const t=document.getElementById('ka-t').value.trim();
+    if(!t){alert('Titel erforderlich');return}
+    await fsSave('aufgaben',uid2(),{titel:t,kategorie:document.getElementById('ka-k').value,datum:document.getElementById('ka-d').value,bereich:document.getElementById('ka-b').value,notizen:document.getElementById('ka-n').value,erledigt:false});
+    M.close();APP.go('kalender');
   },
-  async del(id) {
-    if (confirm('Produkt wirklich löschen?')) { await fsDel('produkte', id); APP.loadTab('produkte'); }
-  }
+  async toggle(id,val){
+    const cur=await fsLoad('aufgaben');
+    const a=cur.find(x=>x.id===id);if(!a)return;
+    await fsSave('aufgaben',id,{...a,erledigt:val==='true'||val===true});APP.go('kalender');
+  },
+  async del(id){if(confirm('Aufgabe löschen?')){await fsDel('aufgaben',id);APP.go('kalender')}}
 };
 
-/* ═══════════════ TAB: BERICHTE ══════════════════════════════ */
-async function TAB_BERICHTE(container) {
-  const [felder, tiere, maschinen, produkte] = await Promise.all([
-    fsLoad('felder'), fsLoad('tiere'), fsLoad('maschinen'), fsLoad('produkte')
-  ]);
-  const warenwert = produkte.reduce((a,p)=>a+(Number(p.preis||0)*Number(p.menge||0)),0);
-  const haGesamt  = felder.reduce((a,f)=>a+Number(f.groesse||0),0);
-  const tierTotal = tiere.reduce((a,t)=>a+Number(t.anzahl||0),0);
-  container.innerHTML = `
-    <div class="section-header"><span class="section-title">Nachhaltigkeits- & Betriebsbericht</span></div>
-    <div class="metric-grid" style="margin-bottom:20px">
-      <div class="metric-card"><div class="metric-label">Gesamtfläche</div><div class="metric-value">${haGesamt.toFixed(1)}</div><div class="metric-sub">Hektaren</div></div>
-      <div class="metric-card"><div class="metric-label">Tierbestand</div><div class="metric-value">${tierTotal}</div><div class="metric-sub">Tiere total</div></div>
-      <div class="metric-card"><div class="metric-label">Maschinenpark</div><div class="metric-value">${maschinen.length}</div><div class="metric-sub">Geräte erfasst</div></div>
-      <div class="metric-card"><div class="metric-label">Warenwert</div><div class="metric-value" style="font-size:16px">${fmt.chf(warenwert)}</div><div class="metric-sub">Im Marktplatz</div></div>
+/* ═══════ TAGESRAPPORTE ═══════ */
+async function TAB_TAGESRAPPORTE(c){
+  const rap=await fsLoad('tagesrapporte');
+  c.innerHTML=`
+    <div class="sec-hdr"><span class="sec-t">Tagesrapporte</span><button class="btn-add" onclick="RAP.openNew()">+ Neuer Rapport</button></div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="dt">
+        <thead><tr><th>Datum</th><th>Mitarbeiter</th><th>Tätigkeit</th><th>Feld</th><th>Stunden</th><th>Notizen</th><th></th></tr></thead>
+        <tbody>
+          ${rap.length===0?`<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">Keine Rapporte erfasst.</td></tr>`:
+            rap.sort((a,b)=>b.datum>a.datum?1:-1).map(r=>`<tr>
+              <td>${fmt.date(r.datum)}</td>
+              <td><strong>${esc(r.mitarbeiter)}</strong></td>
+              <td>${esc(r.taetigkeit||'–')}</td>
+              <td>${esc(r.feld||'–')}</td>
+              <td><span class="sb s-in">${esc(r.stunden||'–')} h</span></td>
+              <td style="font-size:12px;color:var(--muted)">${esc(r.notizen||'–')}</td>
+              <td><button class="btn-del" onclick="RAP.del('${r.id}')">Löschen</button></td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+const RAP={
+  openNew(){
+    M.open('Neuer Tagesrapport',`
+      <div class="frow">
+        <div class="fg"><label class="fl2">Datum *</label><input class="fi2" id="rp-d" type="date" value="${new Date().toISOString().split('T')[0]}"></div>
+        <div class="fg"><label class="fl2">Mitarbeiter *</label><input class="fi2" id="rp-m" placeholder="Max Müller"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label class="fl2">Tätigkeit</label>
+          <select class="fs" id="rp-ta"><option>Pflügen</option><option>Säen</option><option>Düngen</option><option>Spritzen</option><option>Ernten</option><option>Tierbetreuung</option><option>Maschinenwartung</option><option>Sonstiges</option></select></div>
+        <div class="fg"><label class="fl2">Feld / Bereich</label><input class="fi2" id="rp-f" placeholder="Nordfeld"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label class="fl2">Stunden</label><input class="fi2" id="rp-s" type="number" step="0.5" placeholder="8"></div>
+        <div class="fg"><label class="fl2">Notizen</label><input class="fi2" id="rp-n" placeholder="Optional"></div>
+      </div>`,
+      `<button class="btn-sec" onclick="M.close()">Abbrechen</button><button class="btn-add" onclick="RAP.save()">Speichern</button>`
+    );
+  },
+  async save(){
+    const m=document.getElementById('rp-m').value.trim();
+    if(!m){alert('Mitarbeiter erforderlich');return}
+    await fsSave('tagesrapporte',uid2(),{datum:document.getElementById('rp-d').value,mitarbeiter:m,taetigkeit:document.getElementById('rp-ta').value,feld:document.getElementById('rp-f').value,stunden:document.getElementById('rp-s').value,notizen:document.getElementById('rp-n').value});
+    M.close();APP.go('tagesrapporte');
+  },
+  async del(id){if(confirm('Rapport löschen?')){await fsDel('tagesrapporte',id);APP.go('tagesrapporte')}}
+};
+
+/* ═══════ FELDER ═══════ */
+async function TAB_FELDER(c){
+  const felder=await fsLoad('felder');
+  c.innerHTML=`
+    <div class="sec-hdr"><span class="sec-t">Felder verwalten</span><button class="btn-add" onclick="FELDER.openNew()">+ Neues Feld</button></div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="dt">
+        <thead><tr><th>Name</th><th>Grösse</th><th>Kultur</th><th>Boden</th><th>Nährstoff</th><th>Bewässerung</th><th>Status</th><th></th></tr></thead>
+        <tbody>${felder.length===0?`<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">Keine Felder erfasst.</td></tr>`:
+          felder.map(f=>{const p=+f.naehrstoff||75;const s=p>=75?'s-ok':p>=55?'s-wa':'s-er';return`<tr>
+            <td><strong>${esc(f.name)}</strong></td><td>${fmt.ha(f.groesse)}</td><td>${esc(f.kultur||'–')}</td>
+            <td>${esc(f.boden||'–')}</td><td><span class="sb ${s}">${p}%</span></td>
+            <td>${esc(f.bewaesserung||'–')}</td><td><span class="sb s-ok">Aktiv</span></td>
+            <td><button class="btn-del" onclick="FELDER.del('${f.id}')">Löschen</button></td>
+          </tr>`}).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+const FELDER={
+  openNew(){M.open('Neues Feld',`
+    <div class="frow"><div class="fg"><label class="fl2">Name *</label><input class="fi2" id="f-n" placeholder="Nordfeld"></div><div class="fg"><label class="fl2">Grösse (ha)</label><input class="fi2" id="f-g" type="number" step="0.1" placeholder="5.5"></div></div>
+    <div class="frow"><div class="fg"><label class="fl2">Kultur</label><input class="fi2" id="f-k" placeholder="Weizen"></div><div class="fg"><label class="fl2">Boden</label><select class="fs" id="f-b"><option value="">–</option><option>Sandiger Lehm</option><option>Tonboden</option><option>Humus</option><option>Lössboden</option></select></div></div>
+    <div class="frow"><div class="fg"><label class="fl2">Nährstoff %</label><input class="fi2" id="f-na" type="number" min="0" max="100" placeholder="75"></div><div class="fg"><label class="fl2">Bewässerung</label><select class="fs" id="f-bw"><option value="">–</option><option>Tröpfchen</option><option>Beregnung</option><option>Natürlicher Regen</option></select></div></div>`,
+    `<button class="btn-sec" onclick="M.close()">Abbrechen</button><button class="btn-add" onclick="FELDER.save()">Speichern</button>`
+  )},
+  async save(){const n=document.getElementById('f-n').value.trim();if(!n){alert('Name erforderlich');return}await fsSave('felder',uid2(),{name:n,groesse:document.getElementById('f-g').value,kultur:document.getElementById('f-k').value,boden:document.getElementById('f-b').value,naehrstoff:document.getElementById('f-na').value||75,bewaesserung:document.getElementById('f-bw').value});M.close();APP.go('felder')},
+  async del(id){if(confirm('Feld löschen?')){await fsDel('felder',id);APP.go('felder')}}
+};
+
+/* ═══════ TIERE ═══════ */
+async function TAB_TIERE(c){
+  const tiere=await fsLoad('tiere');
+  c.innerHTML=`
+    <div class="sec-hdr"><span class="sec-t">Tierbestand</span><button class="btn-add" onclick="TIERE.openNew()">+ Neue Gruppe</button></div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="dt">
+        <thead><tr><th>Tierart</th><th>Anzahl</th><th>Gesundheit</th><th>Futter</th><th>Nächste Impfung</th><th>Notizen</th><th></th></tr></thead>
+        <tbody>${tiere.length===0?`<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">Keine Tiere.</td></tr>`:
+          tiere.map(t=>{const h=+t.gesundheit||90;const s=h>=80?'s-ok':h>=60?'s-wa':'s-er';return`<tr>
+            <td><strong>${esc(t.art)}</strong></td><td>${esc(t.anzahl)}</td><td><span class="sb ${s}">${h}%</span></td>
+            <td><span class="sb s-in">${esc(t.futter||'–')}</span></td><td>${fmt.date(t.impfung)}</td>
+            <td style="font-size:12px;color:var(--muted)">${esc(t.notizen||'–')}</td>
+            <td><button class="btn-del" onclick="TIERE.del('${t.id}')">Löschen</button></td>
+          </tr>`}).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+const TIERE={
+  openNew(){M.open('Neue Tiergruppe',`
+    <div class="frow"><div class="fg"><label class="fl2">Tierart *</label><select class="fs" id="t-a"><option value="">–</option><option>Rinder</option><option>Schweine</option><option>Schafe</option><option>Geflügel</option><option>Ziegen</option><option>Pferde</option></select></div><div class="fg"><label class="fl2">Anzahl</label><input class="fi2" id="t-n" type="number" placeholder="40"></div></div>
+    <div class="frow"><div class="fg"><label class="fl2">Gesundheit %</label><input class="fi2" id="t-g" type="number" min="0" max="100" placeholder="90"></div><div class="fg"><label class="fl2">Futter</label><select class="fs" id="t-f"><option value="">–</option><option>Bio</option><option>Standard</option><option>Premium</option></select></div></div>
+    <div class="frow"><div class="fg"><label class="fl2">Nächste Impfung</label><input class="fi2" id="t-i" type="date"></div><div class="fg"><label class="fl2">Notizen</label><input class="fi2" id="t-no" placeholder="Optional"></div></div>`,
+    `<button class="btn-sec" onclick="M.close()">Abbrechen</button><button class="btn-add" onclick="TIERE.save()">Speichern</button>`
+  )},
+  async save(){const a=document.getElementById('t-a').value;if(!a){alert('Tierart erforderlich');return}await fsSave('tiere',uid2(),{art:a,anzahl:document.getElementById('t-n').value,gesundheit:document.getElementById('t-g').value||90,futter:document.getElementById('t-f').value,impfung:document.getElementById('t-i').value,notizen:document.getElementById('t-no').value});M.close();APP.go('tiere')},
+  async del(id){if(confirm('Tiergruppe löschen?')){await fsDel('tiere',id);APP.go('tiere')}}
+};
+
+/* ═══════ MASCHINEN ═══════ */
+async function TAB_MASCHINEN(c){
+  const m=await fsLoad('maschinen');
+  c.innerHTML=`
+    <div class="sec-hdr"><span class="sec-t">Maschinen & Geräte</span><button class="btn-add" onclick="MASCH.openNew()">+ Neue Maschine</button></div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="dt">
+        <thead><tr><th>Typ</th><th>Marke / Modell</th><th>Jahr</th><th>Status</th><th>Letzte Wartung</th><th>Nächste Wartung</th><th></th></tr></thead>
+        <tbody>${m.length===0?`<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">Keine Maschinen.</td></tr>`:
+          m.map(x=>{const s={ok:'s-ok',wartung:'s-wa',reparatur:'s-er',verfuegbar:'s-in'}[x.status]||'s-in';return`<tr>
+            <td><strong>${esc(x.typ)}</strong></td><td>${esc(x.marke||'')} ${esc(x.modell||'')}</td><td>${esc(x.baujahr||'–')}</td>
+            <td><span class="sb ${s}">${esc(x.status||'ok')}</span></td>
+            <td>${fmt.date(x.wartLetzt)}</td><td>${fmt.date(x.wartNaechst)}</td>
+            <td><button class="btn-del" onclick="MASCH.del('${x.id}')">Löschen</button></td>
+          </tr>`}).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+const MASCH={
+  openNew(){M.open('Neue Maschine',`
+    <div class="frow"><div class="fg"><label class="fl2">Typ *</label><select class="fs" id="ma-t"><option value="">–</option><option>Traktor</option><option>Mähdrescher</option><option>Pflug</option><option>Sämaschine</option><option>Güllefass</option><option>Anhänger</option><option>Sonstige</option></select></div><div class="fg"><label class="fl2">Marke</label><input class="fi2" id="ma-ma" placeholder="Massey Ferguson"></div></div>
+    <div class="frow"><div class="fg"><label class="fl2">Modell</label><input class="fi2" id="ma-mo" placeholder="MF 5710"></div><div class="fg"><label class="fl2">Baujahr</label><input class="fi2" id="ma-bj" type="number" placeholder="2018"></div></div>
+    <div class="frow"><div class="fg"><label class="fl2">Status</label><select class="fs" id="ma-s"><option value="ok">OK</option><option value="wartung">Wartung fällig</option><option value="reparatur">In Reparatur</option></select></div><div class="fg"><label class="fl2">Nächste Wartung</label><input class="fi2" id="ma-wn" type="date"></div></div>`,
+    `<button class="btn-sec" onclick="M.close()">Abbrechen</button><button class="btn-add" onclick="MASCH.save()">Speichern</button>`
+  )},
+  async save(){const t=document.getElementById('ma-t').value;if(!t){alert('Typ erforderlich');return}await fsSave('maschinen',uid2(),{typ:t,marke:document.getElementById('ma-ma').value,modell:document.getElementById('ma-mo').value,baujahr:document.getElementById('ma-bj').value,status:document.getElementById('ma-s').value,wartNaechst:document.getElementById('ma-wn').value,wartLetzt:new Date().toISOString().split('T')[0]});M.close();APP.go('maschinen')},
+  async del(id){if(confirm('Maschine löschen?')){await fsDel('maschinen',id);APP.go('maschinen')}}
+};
+
+/* ═══════ LAGER & INVENTAR ═══════ */
+async function TAB_LAGER(c){
+  const lager=await fsLoad('lager');
+  c.innerHTML=`
+    <div class="sec-hdr"><span class="sec-t">Lager & Inventar</span><button class="btn-add" onclick="LAGER.openNew()">+ Artikel erfassen</button></div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="dt">
+        <thead><tr><th>Artikel</th><th>Kategorie</th><th>Bestand</th><th>Einheit</th><th>Mindestbestand</th><th>Lieferant</th><th>Status</th><th></th></tr></thead>
+        <tbody>${lager.length===0?`<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">Kein Lager erfasst.</td></tr>`:
+          lager.map(l=>{const low=+l.bestand<+l.min;return`<tr>
+            <td><strong>${esc(l.name)}</strong></td><td>${esc(l.kategorie||'–')}</td>
+            <td><strong style="${low?'color:var(--r600)':''}">${esc(l.bestand)}</strong></td>
+            <td>${esc(l.einheit||'–')}</td><td>${esc(l.min||'–')}</td><td>${esc(l.lieferant||'–')}</td>
+            <td><span class="sb ${low?'s-er':'s-ok'}">${low?'Nachfüllen':'OK'}</span></td>
+            <td><button class="btn-del" onclick="LAGER.del('${l.id}')">Löschen</button></td>
+          </tr>`}).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+const LAGER={
+  openNew(){M.open('Lagerartikel erfassen',`
+    <div class="frow"><div class="fg"><label class="fl2">Artikelname *</label><input class="fi2" id="la-n" placeholder="Kalkammonsalpeter"></div><div class="fg"><label class="fl2">Kategorie</label><select class="fs" id="la-k"><option>Dünger</option><option>Saatgut</option><option>Pflanzenschutz</option><option>Treibstoff</option><option>Ersatzteile</option><option>Sonstiges</option></select></div></div>
+    <div class="frow"><div class="fg"><label class="fl2">Bestand</label><input class="fi2" id="la-b" type="number" placeholder="500"></div><div class="fg"><label class="fl2">Einheit</label><select class="fs" id="la-e"><option>kg</option><option>Liter</option><option>Säcke</option><option>Stück</option><option>Tonnen</option></select></div></div>
+    <div class="frow"><div class="fg"><label class="fl2">Mindestbestand</label><input class="fi2" id="la-m" type="number" placeholder="100"></div><div class="fg"><label class="fl2">Lieferant</label><input class="fi2" id="la-l" placeholder="Landi Thurgau"></div></div>`,
+    `<button class="btn-sec" onclick="M.close()">Abbrechen</button><button class="btn-add" onclick="LAGER.save()">Speichern</button>`
+  )},
+  async save(){const n=document.getElementById('la-n').value.trim();if(!n){alert('Name erforderlich');return}await fsSave('lager',uid2(),{name:n,kategorie:document.getElementById('la-k').value,bestand:document.getElementById('la-b').value,einheit:document.getElementById('la-e').value,min:document.getElementById('la-m').value,lieferant:document.getElementById('la-l').value});M.close();APP.go('lager')},
+  async del(id){if(confirm('Artikel löschen?')){await fsDel('lager',id);APP.go('lager')}}
+};
+
+/* ═══════ MITARBEITER ═══════ */
+async function TAB_MITARBEITER(c){
+  const ma=await fsLoad('mitarbeiter');
+  const rap=await fsLoad('tagesrapporte');
+  c.innerHTML=`
+    <div class="sec-hdr"><span class="sec-t">Mitarbeiter</span><button class="btn-add" onclick="MITA.openNew()">+ Person erfassen</button></div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="dt">
+        <thead><tr><th>Name</th><th>Rolle</th><th>Stundenlohn</th><th>Stunden (Monat)</th><th>Lohn (Monat)</th><th>AHV-Nr.</th><th></th></tr></thead>
+        <tbody>${ma.length===0?`<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">Keine Mitarbeiter.</td></tr>`:
+          ma.map(p=>{
+            const now=new Date();const mo=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+            const std=rap.filter(r=>r.mitarbeiter===p.name&&r.datum&&r.datum.startsWith(mo)).reduce((a,r)=>a+Number(r.stunden||0),0);
+            return`<tr>
+              <td><strong>${esc(p.name)}</strong></td><td><span class="sb s-in">${esc(p.rolle||'–')}</span></td>
+              <td>${fmt.chf(p.lohn)}/h</td><td>${std.toFixed(1)} h</td>
+              <td>${fmt.chf(std*Number(p.lohn||0))}</td><td style="font-size:11px;color:var(--muted)">${esc(p.ahv||'–')}</td>
+              <td><button class="btn-del" onclick="MITA.del('${p.id}')">Löschen</button></td>
+            </tr>`}).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+const MITA={
+  openNew(){M.open('Mitarbeiter erfassen',`
+    <div class="frow"><div class="fg"><label class="fl2">Name *</label><input class="fi2" id="mi-n" placeholder="Max Müller"></div><div class="fg"><label class="fl2">Rolle</label><select class="fs" id="mi-r"><option>Landwirt</option><option>Saisonarbeiter</option><option>Lehrling</option><option>Aushilfe</option></select></div></div>
+    <div class="frow"><div class="fg"><label class="fl2">Stundenlohn (CHF)</label><input class="fi2" id="mi-l" type="number" step="0.5" placeholder="28"></div><div class="fg"><label class="fl2">AHV-Nummer</label><input class="fi2" id="mi-ahv" placeholder="756.xxxx.xxxx.xx"></div></div>`,
+    `<button class="btn-sec" onclick="M.close()">Abbrechen</button><button class="btn-add" onclick="MITA.save()">Speichern</button>`
+  )},
+  async save(){const n=document.getElementById('mi-n').value.trim();if(!n){alert('Name erforderlich');return}await fsSave('mitarbeiter',uid2(),{name:n,rolle:document.getElementById('mi-r').value,lohn:document.getElementById('mi-l').value,ahv:document.getElementById('mi-ahv').value});M.close();APP.go('mitarbeiter')},
+  async del(id){if(confirm('Mitarbeiter löschen?')){await fsDel('mitarbeiter',id);APP.go('mitarbeiter')}}
+};
+
+/* ═══════ RECHNUNGEN ═══════ */
+async function TAB_RECHNUNGEN(c){
+  const re=await fsLoad('rechnungen');
+  const total=re.reduce((a,r)=>a+Number(r.betrag||0),0);
+  c.innerHTML=`
+    <div class="sec-hdr"><span class="sec-t">Rechnungen</span><button class="btn-add" onclick="RECH.openNew()">+ Neue Rechnung</button></div>
+    <div class="mgrid" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:16px">
+      <div class="mc"><div class="ml">Total (netto)</div><div class="mv" style="font-size:18px">${fmt.chf(total)}</div></div>
+      <div class="mc"><div class="ml">MWST 2.5% (Nahrung)</div><div class="mv" style="font-size:18px">${fmt.chf(total*0.025)}</div></div>
+      <div class="mc"><div class="ml">Total inkl. MWST</div><div class="mv" style="font-size:18px">${fmt.chf(total*1.025)}</div></div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="dt">
+        <thead><tr><th>Nr.</th><th>Kunde</th><th>Datum</th><th>Betrag netto</th><th>MWST</th><th>Total</th><th>Status</th><th></th></tr></thead>
+        <tbody>${re.length===0?`<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">Keine Rechnungen.</td></tr>`:
+          re.sort((a,b)=>b.datum>a.datum?1:-1).map((r,i)=>{const b=Number(r.betrag||0);const mwst=b*Number(r.mwstSatz||0.025);return`<tr>
+            <td><span class="sb s-in">RE-${String(re.length-i).padStart(3,'0')}</span></td>
+            <td><strong>${esc(r.kunde)}</strong></td><td>${fmt.date(r.datum)}</td>
+            <td>${fmt.chf(b)}</td><td>${fmt.chf(mwst)} (${((r.mwstSatz||0.025)*100).toFixed(1)}%)</td>
+            <td><strong>${fmt.chf(b+mwst)}</strong></td>
+            <td><span class="sb ${r.bezahlt?'s-ok':'s-wa'}">${r.bezahlt?'Bezahlt':'Offen'}</span></td>
+            <td style="display:flex;gap:4px">
+              <button class="btn-sec" style="padding:4px 7px;font-size:11px" onclick="RECH.toggle('${r.id}',${!r.bezahlt})">✓</button>
+              <button class="btn-del" onclick="RECH.del('${r.id}')">×</button>
+            </td>
+          </tr>`}).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+const RECH={
+  openNew(){M.open('Neue Rechnung erstellen',`
+    <div class="frow"><div class="fg"><label class="fl2">Kunde *</label><input class="fi2" id="re-k" placeholder="Müller GmbH"></div><div class="fg"><label class="fl2">Datum</label><input class="fi2" id="re-d" type="date" value="${new Date().toISOString().split('T')[0]}"></div></div>
+    <div class="frow"><div class="fg"><label class="fl2">Betrag netto (CHF)</label><input class="fi2" id="re-b" type="number" step="0.05" placeholder="1200.00"></div><div class="fg"><label class="fl2">MWST-Satz</label><select class="fs" id="re-mw"><option value="0.025">2.5% (Nahrungsmittel)</option><option value="0.077">7.7% (Standardsatz)</option><option value="0.038">3.8% (Beherbergung)</option><option value="0">0% (befreit)</option></select></div></div>
+    <div class="fg"><label class="fl2">Beschreibung / Leistung</label><textarea class="fta" id="re-desc" rows="2" placeholder="Lieferung Bio-Weizen 500 kg…"></textarea></div>`,
+    `<button class="btn-sec" onclick="M.close()">Abbrechen</button><button class="btn-add" onclick="RECH.save()">Speichern</button>`
+  )},
+  async save(){const k=document.getElementById('re-k').value.trim();if(!k){alert('Kunde erforderlich');return}await fsSave('rechnungen',uid2(),{kunde:k,datum:document.getElementById('re-d').value,betrag:document.getElementById('re-b').value,mwstSatz:parseFloat(document.getElementById('re-mw').value),beschreibung:document.getElementById('re-desc').value,bezahlt:false});M.close();APP.go('rechnungen')},
+  async toggle(id,val){const all=await fsLoad('rechnungen');const r=all.find(x=>x.id===id);if(r){await fsSave('rechnungen',id,{...r,bezahlt:val});APP.go('rechnungen')}},
+  async del(id){if(confirm('Rechnung löschen?')){await fsDel('rechnungen',id);APP.go('rechnungen')}}
+};
+
+/* ═══════ PRODUKTE ═══════ */
+async function TAB_PRODUKTE(c){
+  const pr=await fsLoad('produkte');
+  const tw=pr.reduce((a,p)=>a+(Number(p.preis||0)*Number(p.menge||0)),0);
+  c.innerHTML=`
+    <div class="sec-hdr"><span class="sec-t">Marktplatz – Produkte</span><button class="btn-add" onclick="PROD.openNew()">+ Produkt</button></div>
+    <div class="mgrid" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:16px">
+      <div class="mc"><div class="ml">Produkte</div><div class="mv">${pr.length}</div></div>
+      <div class="mc"><div class="ml">Warenwert</div><div class="mv" style="font-size:18px">${fmt.chf(tw)}</div></div>
+      <div class="mc"><div class="ml">MWST 2.5%</div><div class="mv" style="font-size:18px">${fmt.chf(tw*0.025)}</div></div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="dt">
+        <thead><tr><th>Produkt</th><th>Kategorie</th><th>Menge</th><th>Preis/Einheit</th><th>Gesamtwert</th><th>Verfügbar bis</th><th></th></tr></thead>
+        <tbody>${pr.length===0?`<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">Keine Produkte.</td></tr>`:
+          pr.map(p=>`<tr>
+            <td><strong>${esc(p.name)}</strong></td><td>${esc(p.kategorie||'–')}</td>
+            <td>${esc(p.menge||'–')} ${esc(p.einheit||'')}</td><td>${fmt.chf(p.preis)}</td>
+            <td>${fmt.chf(Number(p.preis||0)*Number(p.menge||0))}</td><td>${fmt.date(p.verfBis)}</td>
+            <td><button class="btn-del" onclick="PROD.del('${p.id}')">Löschen</button></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+const PROD={
+  openNew(){M.open('Produkt inserieren',`
+    <div class="frow"><div class="fg"><label class="fl2">Name *</label><input class="fi2" id="pr-n" placeholder="Bio-Weizen"></div><div class="fg"><label class="fl2">Kategorie</label><select class="fs" id="pr-k"><option>Getreide</option><option>Gemüse</option><option>Obst</option><option>Milchprodukte</option><option>Fleisch</option><option>Eier</option></select></div></div>
+    <div class="frow"><div class="fg"><label class="fl2">Menge</label><input class="fi2" id="pr-m" type="number" placeholder="500"></div><div class="fg"><label class="fl2">Einheit</label><select class="fs" id="pr-e"><option>kg</option><option>Liter</option><option>Stück</option><option>Tonnen</option></select></div></div>
+    <div class="frow"><div class="fg"><label class="fl2">Preis/Einheit (CHF)</label><input class="fi2" id="pr-p" type="number" step="0.05" placeholder="1.20"></div><div class="fg"><label class="fl2">Verfügbar bis</label><input class="fi2" id="pr-d" type="date"></div></div>`,
+    `<button class="btn-sec" onclick="M.close()">Abbrechen</button><button class="btn-add" onclick="PROD.save()">Speichern</button>`
+  )},
+  async save(){const n=document.getElementById('pr-n').value.trim();if(!n){alert('Name erforderlich');return}await fsSave('produkte',uid2(),{name:n,kategorie:document.getElementById('pr-k').value,menge:document.getElementById('pr-m').value,einheit:document.getElementById('pr-e').value,preis:document.getElementById('pr-p').value,verfBis:document.getElementById('pr-d').value});M.close();APP.go('produkte')},
+  async del(id){if(confirm('Produkt löschen?')){await fsDel('produkte',id);APP.go('produkte')}}
+};
+
+/* ═══════ BUCHHALTUNG ═══════ */
+async function TAB_BUCHHALTUNG(c){
+  const[re,prod,rap,ma]=await Promise.all([fsLoad('rechnungen'),fsLoad('produkte'),fsLoad('tagesrapporte'),fsLoad('mitarbeiter')]);
+  const einnahmen=re.filter(r=>r.bezahlt).reduce((a,r)=>a+Number(r.betrag||0),0);
+  const lohnkosten=rap.reduce((r,x)=>{const p=ma.find(m=>m.name===x.mitarbeiter);return r+(p?Number(x.stunden||0)*Number(p.lohn||0):0)},0);
+  const warenwert=prod.reduce((a,p)=>a+(Number(p.preis||0)*Number(p.menge||0)),0);
+  const gewinn=einnahmen-lohnkosten;
+  c.innerHTML=`
+    <div class="sec-hdr"><span class="sec-t">Buchhaltungs-Übersicht ${new Date().getFullYear()}</span></div>
+    <div class="mgrid" style="margin-bottom:18px">
+      <div class="mc"><div class="ml">Einnahmen (bezahlt)</div><div class="mv mu" style="font-size:18px">${fmt.chf(einnahmen)}</div></div>
+      <div class="mc"><div class="ml">Lohnkosten</div><div class="mv md" style="font-size:18px">${fmt.chf(lohnkosten)}</div></div>
+      <div class="mc"><div class="ml">Rohgewinn</div><div class="mv ${gewinn>=0?'mu':'md'}" style="font-size:18px">${fmt.chf(gewinn)}</div></div>
+      <div class="mc"><div class="ml">Warenwert (Lager)</div><div class="mv" style="font-size:18px">${fmt.chf(warenwert)}</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
       <div class="card">
-        <div class="section-header"><span class="section-title">Feldqualität-Übersicht</span></div>
-        ${felder.length===0?'<p style="color:var(--text-muted);font-size:13px">Keine Felder.</p>':felder.map(f=>{
-          const pct=parseInt(f.naehrstoff||75);
-          const col=pct>=75?'var(--green-600)':pct>=55?'var(--amber-600)':'var(--red-600)';
-          return `<div class="progress-row">
-            <span class="progress-name">${esc(f.name)}</span>
-            <div class="progress-bar-wrap"><div class="progress-fill" style="width:${pct}%;background:${col}"></div></div>
-            <span class="progress-val">${pct}%</span>
-          </div>`;
-        }).join('')}
+        <div class="sec-hdr"><span class="sec-t">Einnahmen vs. Kosten</span></div>
+        ${einnahmen+lohnkosten===0?'<p style="font-size:13px;color:var(--muted)">Noch keine Daten.</p>':`
+        <div style="margin-bottom:8px;font-size:12px;display:flex;gap:14px">
+          <span style="color:var(--g700)">■ Einnahmen ${fmt.chf(einnahmen)}</span>
+          <span style="color:var(--r600)">■ Lohnkosten ${fmt.chf(lohnkosten)}</span>
+        </div>
+        <div class="buch-bar">
+          <div class="bb-ein" style="width:${einnahmen/(einnahmen+lohnkosten)*100||0}%"></div>
+          <div class="bb-aus" style="width:${lohnkosten/(einnahmen+lohnkosten)*100||0}%"></div>
+        </div>
+        <p style="font-size:11px;color:var(--muted);margin-top:6px">* Vereinfachte Übersicht. Für Steuern: Treuhänder beiziehen.</p>`}
       </div>
       <div class="card">
-        <div class="section-header"><span class="section-title">Schweizer Direktzahlungen</span></div>
-        <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px">Geschätzte Beiträge (Richtwerte 2026):</p>
-        <table class="data-table">
-          <tr><td>Allg. Direktzahlungen</td><td style="text-align:right;font-weight:500">CHF 1'050 / ha</td></tr>
-          <tr><td>Bio-Beitrag (falls zutreffend)</td><td style="text-align:right;font-weight:500">CHF 1'600 / ha</td></tr>
-          <tr><td>Biodiversität Stufe I</td><td style="text-align:right;font-weight:500">CHF 450 / ha</td></tr>
-          <tr><td style="font-weight:600">Schätzung total (${haGesamt.toFixed(1)} ha)</td><td style="text-align:right;font-weight:600;color:var(--green-700)">${fmt.chf(haGesamt*1050)}</td></tr>
+        <div class="sec-hdr"><span class="sec-t">Schweizer Direktzahlungen</span></div>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Richtwerte BLW 2026 (keine Garantie)</p>
+        <table class="dt">
+          <tr><td>Allg. Direktzahlungen</td><td style="text-align:right;font-weight:500">CHF 1'050/ha</td></tr>
+          <tr><td>Bio-Beitrag</td><td style="text-align:right;font-weight:500">CHF 1'600/ha</td></tr>
+          <tr><td>Biodiversität Stufe I</td><td style="text-align:right;font-weight:500">CHF 450/ha</td></tr>
         </table>
-        <p style="font-size:10px;color:var(--text-hint);margin-top:8px">* Richtwerte, keine Beratung. Offizielle Angaben: blw.admin.ch</p>
+        <p style="font-size:10px;color:var(--hint);margin-top:6px">Offizielle Angaben: blw.admin.ch</p>
       </div>
     </div>`;
 }
 
-/* ═══════════════ TAB: BERATUNG ══════════════════════════════ */
-function TAB_BERATUNG(container) {
-  container.innerHTML = `
-    <div class="section-header"><span class="section-title">Landwirtschaftliche Beratung</span></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px">
+/* ═══════ ERINNERUNGEN ═══════ */
+async function TAB_ERINNERUNGEN(c){
+  const er=await fsLoad('erinnerungen');
+  const heute=new Date().toISOString().split('T')[0];
+  const offen=er.filter(e=>!e.erledigt).length;
+  if(offen>0){const nb=document.getElementById('nb-er');nb.textContent=offen;nb.style.display=''}
+  c.innerHTML=`
+    <div class="sec-hdr"><span class="sec-t">Erinnerungen</span><button class="btn-add" onclick="ERIN.openNew()">+ Neue Erinnerung</button></div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="dt">
+        <thead><tr><th>Titel</th><th>Kategorie</th><th>Fällig</th><th>Status</th><th></th></tr></thead>
+        <tbody>${er.length===0?`<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--muted)">Keine Erinnerungen.</td></tr>`:
+          er.sort((a,b)=>a.datum>b.datum?1:-1).map(e=>{const late=e.datum&&e.datum<heute&&!e.erledigt;return`<tr>
+            <td><strong ${late?'style="color:var(--r600)"'}>${esc(e.titel)}</strong></td>
+            <td><span class="sb s-in">${esc(e.kategorie||'–')}</span></td>
+            <td ${late?'style="color:var(--r600)"'}>${fmt.date(e.datum)}${late?' ⚠':''}</td>
+            <td><span class="sb ${e.erledigt?'s-ok':'s-wa'}">${e.erledigt?'Erledigt':'Offen'}</span></td>
+            <td style="display:flex;gap:4px">
+              <button class="btn-sec" style="padding:4px 7px;font-size:11px" onclick="ERIN.toggle('${e.id}',${!e.erledigt})">✓</button>
+              <button class="btn-del" onclick="ERIN.del('${e.id}')">×</button>
+            </td>
+          </tr>`}).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+const ERIN={
+  openNew(){M.open('Neue Erinnerung',`
+    <div class="frow"><div class="fg"><label class="fl2">Titel *</label><input class="fi2" id="er-t" placeholder="Traktor Service"></div><div class="fg"><label class="fl2">Kategorie</label><select class="fs" id="er-k"><option>Wartung</option><option>Impfung</option><option>Direktzahlungen</option><option>Aussaat</option><option>Ernte</option><option>Sonstiges</option></select></div></div>
+    <div class="frow"><div class="fg"><label class="fl2">Fällig am</label><input class="fi2" id="er-d" type="date"></div><div class="fg"><label class="fl2">Notiz</label><input class="fi2" id="er-n" placeholder="Optional"></div></div>`,
+    `<button class="btn-sec" onclick="M.close()">Abbrechen</button><button class="btn-add" onclick="ERIN.save()">Speichern</button>`
+  )},
+  async save(){const t=document.getElementById('er-t').value.trim();if(!t){alert('Titel erforderlich');return}await fsSave('erinnerungen',uid2(),{titel:t,kategorie:document.getElementById('er-k').value,datum:document.getElementById('er-d').value,notiz:document.getElementById('er-n').value,erledigt:false});M.close();APP.go('erinnerungen')},
+  async toggle(id,val){const all=await fsLoad('erinnerungen');const e=all.find(x=>x.id===id);if(e){await fsSave('erinnerungen',id,{...e,erledigt:val});APP.go('erinnerungen')}},
+  async del(id){if(confirm('Erinnerung löschen?')){await fsDel('erinnerungen',id);APP.go('erinnerungen')}}
+};
+
+/* ═══════ BERATUNG ═══════ */
+function TAB_BERATUNG(c){
+  c.innerHTML=`
+    <div class="sec-hdr"><span class="sec-t">Beratung & Links</span></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px">
       ${[
-        {icon:'🌿', titel:'Pflanzenschutz', text:'Beratung zu Krankheiten, Schädlingen & Herbiziden', link:'https://www.strickhof.ch'},
-        {icon:'🐄', titel:'Tierhaltung & Recht', text:'TVD, RAUS, BTS – korrekte Haltung & Dokumentation', link:'https://www.blv.admin.ch'},
-        {icon:'🇨🇭', titel:'Direktzahlungen', text:'Anforderungen & Beitragsberechnung 2026', link:'https://www.blw.admin.ch'},
-        {icon:'🌱', titel:'Bio Suisse', text:'Umstieg auf Bio – Anforderungen & Unterstützung', link:'https://www.bio-suisse.ch'},
-        {icon:'🌦️', titel:'Agrarwetter Schweiz', text:'MeteoSchweiz – landwirtschaftlicher Wetterdienst', link:'https://www.meteoswiss.admin.ch'},
-        {icon:'⚖️', titel:'Datenschutz revDSG', text:'Schweizer Datenschutz für Betriebe', link:'https://www.edoeb.admin.ch'},
-      ].map(r=>`
-        <div class="card" style="cursor:pointer" onclick="window.open('${r.link}','_blank')">
-          <div style="font-size:28px;margin-bottom:8px">${r.icon}</div>
-          <div style="font-size:14px;font-weight:600;margin-bottom:4px">${r.titel}</div>
-          <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">${r.text}</div>
-          <span class="chip chip-blue" style="font-size:10px">Zur Website →</span>
-        </div>`).join('')}
+        {e:'🌿',t:'Strickhof',d:'Agrarbildung & Beratung Kanton Zürich',u:'https://www.strickhof.ch'},
+        {e:'🐄',t:'BLV Tiergesundheit',d:'Veterinäramt & Tierhaltungsvorschriften',u:'https://www.blv.admin.ch'},
+        {e:'🇨🇭',t:'BLW Direktzahlungen',d:'Anforderungen & Berechnung 2026',u:'https://www.blw.admin.ch'},
+        {e:'🌱',t:'Bio Suisse',d:'Umstieg auf Bio – Anforderungen & Support',u:'https://www.bio-suisse.ch'},
+        {e:'🌦',t:'MeteoSchweiz',d:'Landwirtschaftlicher Wetterdienst CH',u:'https://www.meteoswiss.admin.ch'},
+        {e:'⚖️',t:'revDSG Datenschutz',d:'EDÖB – Datenschutz für Betriebe',u:'https://www.edoeb.admin.ch'},
+      ].map(r=>`<div class="card" style="cursor:pointer" onclick="window.open('${r.u}','_blank')">
+        <div style="font-size:26px;margin-bottom:7px">${r.e}</div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:3px">${r.t}</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px">${r.d}</div>
+        <span class="chip cb" style="font-size:10px">Website →</span>
+      </div>`).join('')}
     </div>
     <div class="card">
-      <div class="section-title" style="margin-bottom:12px">Beratungsanfrage senden</div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Bereich</label>
-          <select class="form-select" id="berat-bereich">
-            <option>Pflanzenbau</option><option>Tierhaltung</option><option>Direktzahlungen</option><option>Recht & Compliance</option><option>Maschinentechnik</option>
-          </select>
-        </div>
-        <div class="form-group"><label class="form-label">Dringlichkeit</label>
-          <select class="form-select" id="berat-dring">
-            <option>Normal (3-5 Tage)</option><option>Dringend (24h)</option><option>Notfall (sofort)</option>
-          </select>
-        </div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:12px">Beratungsanfrage</div>
+      <div class="frow">
+        <div class="fg"><label class="fl2">Bereich</label><select class="fs"><option>Pflanzenbau</option><option>Tierhaltung</option><option>Direktzahlungen</option><option>Recht & Compliance</option></select></div>
+        <div class="fg"><label class="fl2">Dringlichkeit</label><select class="fs"><option>Normal (3-5 Tage)</option><option>Dringend (24h)</option><option>Notfall</option></select></div>
       </div>
-      <div class="form-group"><label class="form-label">Ihre Frage</label>
-        <textarea class="form-textarea" id="berat-text" rows="3" placeholder="Beschreiben Sie Ihr Anliegen…"></textarea>
-      </div>
-      <button class="btn-add" onclick="alert('Anfrage erfasst – ein Berater meldet sich per E-Mail.')">Anfrage senden</button>
+      <div class="fg"><label class="fl2">Frage</label><textarea class="fta" rows="3" placeholder="Ihr Anliegen…"></textarea></div>
+      <button class="btn-add" onclick="alert('Anfrage übermittelt – ein Berater meldet sich.')">Anfrage senden</button>
     </div>`;
 }
 
-/* ═══════════════ TAB: EINSTELLUNGEN ════════════════════════════ */
-function TAB_EINSTELLUNGEN(container) {
-  container.innerHTML = `
-    <div class="section-header"><span class="section-title">Einstellungen</span></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+/* ═══════ EINSTELLUNGEN ═══════ */
+function TAB_EINSTELLUNGEN(c){
+  c.innerHTML=`
+    <div class="sec-hdr"><span class="sec-t">Einstellungen</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
       <div class="card">
-        <div style="font-size:14px;font-weight:600;margin-bottom:14px">Betriebsdaten</div>
-        <div class="form-group"><label class="form-label">Betriebsname</label><input class="form-input" placeholder="Musterhof Müller GmbH"></div>
-        <div class="form-group"><label class="form-label">Adresse</label><input class="form-input" placeholder="Dorfstrasse 1, 8400 Winterthur"></div>
-        <div class="form-group"><label class="form-label">MWST-Nummer</label><input class="form-input" placeholder="CHE-123.456.789 MWST"></div>
-        <div class="form-group"><label class="form-label">Betriebsnummer (TVD)</label><input class="form-input" placeholder="CH 123456789"></div>
-        <button class="btn-add" onclick="alert('Einstellungen gespeichert.')">Speichern</button>
+        <div style="font-size:14px;font-weight:600;margin-bottom:12px">Betriebsdaten</div>
+        <div class="fg"><label class="fl2">Betriebsname</label><input class="fi2" placeholder="Musterhof Müller"></div>
+        <div class="fg"><label class="fl2">Adresse</label><input class="fi2" placeholder="Dorfstrasse 1, 8400 Winterthur"></div>
+        <div class="fg"><label class="fl2">MWST-Nummer</label><input class="fi2" placeholder="CHE-123.456.789 MWST"></div>
+        <div class="fg"><label class="fl2">TVD-Betriebsnummer</label><input class="fi2" placeholder="CH 123456789"></div>
+        <button class="btn-add" onclick="alert('Gespeichert.')">Speichern</button>
       </div>
       <div class="card">
-        <div style="font-size:14px;font-weight:600;margin-bottom:14px">Wetter-API</div>
-        <div class="form-group"><label class="form-label">OpenWeatherMap API-Key</label><input class="form-input" type="password" placeholder="••••••••••••"></div>
-        <div class="form-group"><label class="form-label">Standort (PLZ)</label><input class="form-input" placeholder="8404"></div>
-        <button class="btn-add" style="margin-bottom:14px" onclick="alert('API-Key gespeichert.')">Speichern</button>
-        <hr style="border:none;border-top:1px solid var(--border);margin-bottom:14px">
-        <div style="font-size:14px;font-weight:600;margin-bottom:10px">Datenschutz (revDSG)</div>
-        <div style="font-size:12px;color:var(--text-muted);line-height:1.6">
-          Alle Daten werden verschlüsselt in Firebase (Schweiz/EU) gespeichert. 
-          Kein Verkauf an Dritte. Auskunft & Löschung jederzeit möglich.<br>
-          <a href="https://www.edoeb.admin.ch" target="_blank" style="color:var(--green-700)">Datenschutzbeauftragter CH →</a>
-        </div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:12px">Wetter-Standort</div>
+        <div class="fg"><label class="fl2">Breitengrad</label><input class="fi2" id="lat" placeholder="47.37" value="47.37"></div>
+        <div class="fg"><label class="fl2">Längengrad</label><input class="fi2" id="lon" placeholder="8.54" value="8.54"></div>
+        <p style="font-size:11px;color:var(--muted);margin-bottom:10px">Open-Meteo API – kostenlos, kein Key nötig<br>Koordinaten via <a href="https://www.swisstopo.ch" target="_blank" style="color:var(--g700)">swisstopo.ch</a></p>
+        <hr style="border:none;border-top:1px solid var(--brd);margin-bottom:12px">
+        <div style="font-size:14px;font-weight:600;margin-bottom:8px">Datenschutz (revDSG)</div>
+        <p style="font-size:12px;color:var(--muted);line-height:1.6">Daten werden verschlüsselt in Firebase (EU) gespeichert. Kein Verkauf an Dritte.<br><a href="https://www.edoeb.admin.ch" target="_blank" style="color:var(--g700)">EDÖB →</a></p>
       </div>
     </div>
-    <div class="card" style="margin-top:16px">
-      <div style="font-size:14px;font-weight:600;margin-bottom:10px">Über LandwirtApp</div>
-      <p style="font-size:13px;color:var(--text-muted)">Version 1.0.0 · Schweizer Edition · Entwickelt von ZeroGen, Kloten ZH<br>
-      Sprachen: DE / FR / IT · MWST: 2.5% Nahrungsmittel / 7.7% Standardsatz · Konform mit revDSG & EU-DSGVO</p>
+    <div class="card" style="margin-top:14px">
+      <p style="font-size:13px;color:var(--muted)">LandwirtApp v2.0 · Schweizer Edition · Entwickelt von ZeroGen, Kloten ZH · MWST konform · revDSG / EU-DSGVO</p>
     </div>`;
 }
 </script>
