@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LandwirtApp v2 - Schweizer Edition</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --g800:#27500A;--g700:#3B6D11;--g600:#639922;--g200:#C0DD97;--g50:#EAF3DE;
+  --a600:#BA7517;--a200:#FAC775;--a50:#FAEEDA;
+  --r600:#A32D2D;--r200:#F7C1C1;--r50:#FCEBEB;
+  --b700:#185FA5;--b200:#85B7EB;--b50:#E6F1FB;
+  --gr200:#D3D1C7;--gr50:#F1EFE8;
+  --bg:#F7F6F0;--sur:#FFFFFF;--brd:rgba(0,0,0,0.08);
+  --txt:#1a1a18;--muted:#5F5E5A;--hint:#888780;
+  --r:10px;--rl:14px;
+  --font:'DM Sans',system-ui,sans-serif;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--txt);font-size:14px;line-height:1.5;min-height:100vh}
+#auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,var(--g800),var(--g700),var(--g600))}
+.auth-card{background:var(--sur);border-radius:20px;padding:40px 36px;width:360px;box-shadow:0 20px 60px rgba(0,0,0,.15)}
+.auth-logo{display:flex;align-items:center;gap:10px;margin-bottom:28px}
+.auth-icon{width:40px;height:40px;background:var(--g700);border-radius:10px;display:flex;align-items:center;justify-content:center}
+.auth-icon svg{width:22px;height:22px;fill:white}
+.fl{font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;display:block}
+.fi{width:100%;padding:10px 12px;border:1.5px solid var(--gr200);border-radius:var(--r);font-family:var(--font);font-size:14px;background:var(--bg);color:var(--txt);margin-bottom:12px}
+.fi:focus{outline:none;border-color:var(--g600);background:#fff}
+.bp{width:100%;padding:11px;background:var(--g700);color:#fff;border:none;border-radius:var(--r);font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;margin-top:6px}
+.bp:hover{background:var(--g800)}
+.auth-err{color:var(--r600);font-size:12px;margin-top:8px;display:none}
+#app-shell{display:none;flex-direction:row;min-height:100vh}
+.sidebar{width:220px;min-height:100vh;background:var(--sur);border-right:1px solid var(--brd);display:flex;flex-direction:column;position:sticky;top:0;flex-shrink:0}
+.s-logo{padding:16px 14px 14px;border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:9px}
+.s-logo-icon{width:30px;height:30px;background:var(--g700);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.s-logo-icon svg{width:17px;height:17px;fill:white}
+.s-logo-t{font-size:13px;font-weight:600}
+.s-logo-s{font-size:10px;color:var(--muted)}
+nav{flex:1;padding:8px;overflow-y:auto}
+.nav-sec{font-size:10px;font-weight:600;color:var(--hint);letter-spacing:.08em;text-transform:uppercase;padding:10px 8px 4px}
+.ni{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r);cursor:pointer;font-size:13px;color:var(--muted);transition:all .12s;margin-bottom:1px;user-select:none}
+.ni:hover{background:var(--gr50);color:var(--txt)}
+.ni.active{background:var(--g50);color:var(--g700);font-weight:500}
+.ni svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;flex-shrink:0}
+.nb{margin-left:auto;background:var(--a50);color:var(--a600);font-size:10px;font-weight:600;padding:1px 6px;border-radius:20px}
+.sf{padding:10px 12px;border-top:1px solid var(--brd)}
+.ua{display:flex;align-items:center;gap:8px}
+.av{width:28px;height:28px;border-radius:50%;background:var(--g50);border:1.5px solid var(--g200);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--g700);flex-shrink:0}
+.un{font-size:12px;font-weight:500}
+#user-email-lbl{font-size:10px;color:var(--muted);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px}
+.b-logout{display:flex;align-items:center;gap:5px;margin-top:8px;background:none;border:1px solid var(--brd);border-radius:6px;padding:5px 10px;font-size:11px;color:var(--muted);cursor:pointer;width:100%;font-family:var(--font)}
+.b-logout:hover{background:var(--r50);color:var(--r600);border-color:var(--r600)}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:var(--sur);border-bottom:1px solid var(--brd);padding:13px 22px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.tb-title{font-size:16px;font-weight:600}
+.tb-right{display:flex;align-items:center;gap:7px}
+.chip{font-size:11px;padding:3px 9px;border-radius:20px;font-weight:500}
+.cg{background:var(--g50);color:var(--g700)}.ca{background:var(--a50);color:var(--a600)}.cb{background:var(--b50);color:var(--b700)}
+.content{flex:1;overflow-y:auto;padding:18px 22px}
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px}
+.sec-t{font-size:15px;font-weight:600}
+.btn-add{display:flex;align-items:center;gap:5px;padding:7px 13px;background:var(--g700);color:#fff;border:none;border-radius:var(--r);font-family:var(--font);font-size:12px;font-weight:500;cursor:pointer}
+.btn-add:hover{background:var(--g800)}
+.btn-sec{padding:7px 13px;background:var(--sur);color:var(--txt);border:1px solid var(--brd);border-radius:var(--r);font-family:var(--font);font-size:12px;cursor:pointer}
+.btn-sec:hover{background:var(--gr50)}
+.btn-del{padding:4px 9px;background:none;color:var(--r600);border:1px solid var(--r200);border-radius:6px;font-family:var(--font);font-size:11px;cursor:pointer}
+.btn-del:hover{background:var(--r50)}
+.card{background:var(--sur);border:1px solid var(--brd);border-radius:var(--rl);padding:16px 18px}
+.mgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px;margin-bottom:18px}
+.mc{background:var(--sur);border:1px solid var(--brd);border-radius:var(--rl);padding:14px 16px}
+.ml{font-size:11px;color:var(--muted);font-weight:500;margin-bottom:3px}
+.mv{font-size:24px;font-weight:600;line-height:1;margin-bottom:3px}
+.ms{font-size:11px;color:var(--muted)}
+.mu{color:var(--g700)}.md{color:var(--r600)}
+table.dt{width:100%;border-collapse:collapse}
+table.dt th{text-align:left;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:9px 13px;border-bottom:1px solid var(--brd);background:var(--gr50)}
+table.dt td{padding:10px 13px;border-bottom:1px solid var(--brd);font-size:13px}
+table.dt tr:last-child td{border-bottom:none}
+table.dt tr:hover td{background:var(--gr50)}
+.sb{display:inline-block;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:600}
+.s-ok{background:var(--g50);color:var(--g700)}.s-wa{background:var(--a50);color:var(--a600)}.s-er{background:var(--r50);color:var(--r600)}.s-in{background:var(--b50);color:var(--b700)}
+.prow{display:flex;align-items:center;gap:9px;margin-bottom:7px}
+.pname{font-size:12px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pbw{flex:2;height:5px;background:var(--gr50);border-radius:3px;overflow:hidden;border:1px solid var(--brd)}
+.pf{height:100%;border-radius:3px}
+.pv{font-size:11px;color:var(--muted);min-width:34px;text-align:right}
+.load{text-align:center;padding:40px;color:var(--muted);font-size:13px}
+.spin{width:26px;height:26px;border:3px solid var(--g200);border-top-color:var(--g700);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 10px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100;align-items:center;justify-content:center}
+.mo.open{display:flex}
+.mb{background:var(--sur);border-radius:var(--rl);padding:22px 24px;width:480px;max-width:95vw;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.18)}
+.mt{font-size:16px;font-weight:600;margin-bottom:14px}
+.mf{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.fg{margin-bottom:11px}
+.fl2{font-size:11px;font-weight:600;color:var(--muted);margin-bottom:3px;display:block}
+.fi2,.fs,.fta{width:100%;padding:8px 10px;border:1px solid var(--gr200);border-radius:var(--r);font-family:var(--font);font-size:13px;background:var(--bg);color:var(--txt)}
+.fi2:focus,.fs:focus,.fta:focus{outline:none;border-color:var(--g600);background:#fff}
+.fta{resize:vertical;min-height:65px}
+.wd{background:var(--gr50);border-radius:var(--r);padding:10px 7px;text-align:center;border:1px solid var(--brd)}
+.wd.today{border-color:var(--g200);background:var(--g50)}
+.wd-day{font-size:10px;color:var(--muted);margin-bottom:3px}
+.wd-icon{font-size:18px;line-height:1;margin-bottom:3px}
+.wd-t{font-size:13px;font-weight:600}
+.wd-p{font-size:10px;color:var(--muted)}
+.rec-box{background:var(--a50);border:1px solid var(--a200);border-radius:var(--r);padding:9px 11px;margin-top:10px}
+.rec-l{font-size:10px;font-weight:600;color:var(--a600);margin-bottom:2px}
+.rec-t{font-size:12px}
+.al{display:flex;flex-direction:column;gap:6px}
+.ai{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border-radius:var(--r);border:1px solid transparent}
+.ai-ok{background:var(--g50);border-color:var(--g200)}.ai-wa{background:var(--a50);border-color:var(--a200)}.ai-er{background:var(--r50);border-color:var(--r200)}.ai-in{background:var(--b50);border-color:var(--b200)}
+.ad{width:6px;height:6px;border-radius:50%;margin-top:5px;flex-shrink:0}
+.dok{background:var(--g600)}.dwa{background:var(--a600)}.der{background:var(--r600)}.din{background:var(--b700)}
+.at{font-size:12px;flex:1;line-height:1.4}
+.atime{font-size:10px;color:var(--hint);margin-top:1px}
+.kal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:12px}
+.kal-day-hdr{font-size:10px;font-weight:600;color:var(--muted);text-align:center;padding:4px 0}
+.kal-cell{min-height:52px;background:var(--sur);border:1px solid var(--brd);border-radius:6px;padding:4px}
+.kal-cell.today{border-color:var(--g600)}
+.kal-num{font-size:11px;font-weight:500;margin-bottom:2px}
+.kal-dot{width:100%;background:var(--g50);color:var(--g700);border-radius:3px;padding:1px 3px;margin-bottom:1px;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.kal-dot-a{background:var(--a50);color:var(--a600)}.kal-dot-r{background:var(--r50);color:var(--r600)}.kal-dot-b{background:var(--b50);color:var(--b700)}
+@media(max-width:768px){
+  .sidebar{width:52px}
+  .s-logo-t,.s-logo-s,.ni span,.un,#user-email-lbl,.nav-sec,.nb{display:none}
+  .ni{justify-content:center;padding:10px}.ni svg{margin:0}
+  .s-logo{justify-content:center;padding:12px 6px}
+  .mgrid{grid-template-columns:1fr 1fr}
+  .content{padding:12px}.topbar{padding:11px 14px}
+}
+</style>
+</head>
+<body>
+
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-icon"><svg viewBox="0 0 24 24"><path d="M12 3L4 10h3v11h10V10h3L12 3z"/></svg></div>
+      <div><div style="font-size:16px;font-weight:600">LandwirtApp</div><div style="font-size:11px;color:var(--muted)">Schweizer Edition v2</div></div>
+    </div>
+    <div style="font-size:22px;font-weight:600;margin-bottom:4px">Willkommen</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:22px">Bitte anmelden</div>
+    <label class="fl">E-Mail</label>
+    <input class="fi" id="li-email" type="email" placeholder="name@betrieb.ch" autocomplete="email">
+    <label class="fl">Passwort</label>
+    <input class="fi" id="li-pw" type="password" placeholder="..." autocomplete="current-password">
+    <button class="bp" id="btn-login">Anmelden</button>
+    <div id="auth-err" class="auth-err"></div>
+  </div>
+</div>
+
+<div id="app-shell">
+  <aside class="sidebar">
+    <div class="s-logo">
+      <div class="s-logo-icon"><svg viewBox="0 0 24 24"><path d="M12 3L4 10h3v11h10V10h3L12 3z"/></svg></div>
+      <div><div class="s-logo-t">LandwirtApp</div><div class="s-logo-s">Schweizer Edition</div></div>
+    </div>
+    <nav>
+      <div class="nav-sec">Betrieb</div>
+      <div class="ni active" data-tab="uebersicht"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Uebersicht</span></div>
+      <div class="ni" data-tab="kalender"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span>Kalender</span></div>
+      <div class="ni" data-tab="tagesrapporte"><svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="12" y2="15"/></svg><span>Tagesrapporte</span></div>
+      <div class="nav-sec">Ressourcen</div>
+      <div class="ni" data-tab="felder"><svg viewBox="0 0 24 24"><path d="M3 18L9 6l6 7 3-4 3 9H3z"/></svg><span>Felder</span></div>
+      <div class="ni" data-tab="tiere"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg><span>Tiere</span></div>
+      <div class="ni" data-tab="maschinen"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg><span>Maschinen</span></div>
+      <div class="ni" data-tab="lager"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg><span>Lager</span></div>
+      <div class="ni" data-tab="mitarbeiter"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span>Mitarbeiter</span></div>
+      <div class="nav-sec">Geschaeft</div>
+      <div class="ni" data-tab="rechnungen"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span>Rechnungen</span></div>
+      <div class="ni" data-tab="produkte"><svg viewBox="0 0 24 24"><path d="M6 2L3 6v14h18V6l-3-4H6z"/><path d="M3 6h18"/></svg><span>Marktplatz</span></div>
+      <div class="ni" data-tab="buchhaltung"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg><span>Buchhaltung</span></div>
+      <div class="nav-sec">Info</div>
+      <div class="ni" data-tab="wetter"><svg viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z"/></svg><span>Wetter</span></div>
+      <div class="ni" data-tab="erinnerungen"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg><span>Erinnerungen</span><span class="nb" id="nb-er" style="display:none">0</span></div>
+      <div class="ni" data-tab="beratung"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span>Beratung</span></div>
+      <div class="ni" data-tab="einstellungen"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg><span>Einstellungen</span></div>
+    </nav>
+    <div class="sf">
+      <div class="ua">
+        <div class="av" id="user-avatar">?</div>
+        <div><div class="un">Betrieb</div><span id="user-email-lbl">-</span></div>
+      </div>
+      <button class="b-logout" id="btn-logout">
+        <svg width="11" height="11" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>Abmelden
+      </button>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="topbar">
+      <div class="tb-title" id="tb-title">Uebersicht</div>
+      <div class="tb-right">
+        <span class="chip cg" id="tb-date"></span>
+        <span class="chip ca" id="tb-warn" style="display:none"></span>
+      </div>
+    </div>
+    <div class="content" id="content"><div class="load"><div class="spin"></div>Initialisiere...</div></div>
+  </main>
+</div>
+
+<div class="mo" id="modal">
+  <div class="mb">
+    <div class="mt" id="m-title"></div>
+    <div id="m-body"></div>
+    <div class="mf" id="m-foot"></div>
+  </div>
+</div>
+
+<script>
+(function() {
+'use strict';
+
+document.getElementById('tb-date').textContent = new Date().toLocaleDateString('de-CH',{day:'2-digit',month:'long',year:'numeric'});
+document.getElementById('modal').addEventListener('click', function(e){ if(e.target===document.getElementById('modal')) M.close(); });
+document.querySelectorAll('.ni[data-tab]').forEach(function(el){ el.addEventListener('click', function(){ goTab(el.dataset.tab); }); });
+
+var fmt = {
+  date: function(d){ return d ? new Date(d).toLocaleDateString('de-CH') : '-'; },
+  chf:  function(n){ return 'CHF ' + Number(n||0).toLocaleString('de-CH',{minimumFractionDigits:2,maximumFractionDigits:2}); },
+  ha:   function(n){ return Number(n||0).toFixed(1) + ' ha'; }
+};
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function uid2(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+
+window.M = {
+  open: function(title, body, foot) {
+    document.getElementById('m-title').textContent = title;
+    document.getElementById('m-body').innerHTML = body;
+    document.getElementById('m-foot').innerHTML = foot || '<button class="btn-sec" onclick="M.close()">Abbrechen</button>';
+    document.getElementById('modal').classList.add('open');
+  },
+  close: function() { document.getElementById('modal').classList.remove('open'); }
+};
+
+async function fsLoad(sub) {
+  if (!window._uid) return [];
+  var snap = await window._getDocs(window._col('benutzer/'+window._uid+'/'+sub));
+  return snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+}
+async function fsSave(sub, id, data) {
+  var obj = Object.assign({}, data, {updAt: window._ts()});
+  await window._set(window._doc('benutzer/'+window._uid+'/'+sub, id), obj);
+}
+async function fsDel(sub, id) {
+  await window._del(window._doc('benutzer/'+window._uid+'/'+sub, id));
+}
+
+window.goTab = function(name) {
+  document.querySelectorAll('.ni').forEach(function(el){ el.classList.toggle('active', el.dataset.tab===name); });
+  var tabs = {
+    uebersicht:    {t:'Uebersicht',     r:tabUebersicht},
+    kalender:      {t:'Kalender',       r:tabKalender},
+    tagesrapporte: {t:'Tagesrapporte',  r:tabRapporte},
+    felder:        {t:'Felder',         r:tabFelder},
+    tiere:         {t:'Tiere',          r:tabTiere},
+    maschinen:     {t:'Maschinen',      r:tabMaschinen},
+    lager:         {t:'Lager',          r:tabLager},
+    mitarbeiter:   {t:'Mitarbeiter',    r:tabMitarbeiter},
+    rechnungen:    {t:'Rechnungen',     r:tabRechnungen},
+    produkte:      {t:'Marktplatz',     r:tabProdukte},
+    buchhaltung:   {t:'Buchhaltung',    r:tabBuchhaltung},
+    wetter:        {t:'Wetter',         r:tabWetter},
+    erinnerungen:  {t:'Erinnerungen',   r:tabErinnerungen},
+    beratung:      {t:'Beratung',       r:tabBeratung},
+    einstellungen: {t:'Einstellungen',  r:tabEinstellungen}
+  };
+  var cfg = tabs[name];
+  if (!cfg) return;
+  document.getElementById('tb-title').textContent = cfg.t;
+  var c = document.getElementById('content');
+  c.innerHTML = '<div class="load"><div class="spin"></div>Laden...</div>';
+  cfg.r(c);
+};
+
+// WETTER
+var WETTER = {
+  WMO: {0:'sunny',1:'mostly_clear',2:'partly_cloudy',3:'cloudy',45:'foggy',51:'drizzle',61:'rain',63:'rain',65:'heavy_rain',71:'snow',80:'showers',95:'thunder'},
+  icon: function(c){ var m={0:'sunny',1:'mostly_clear',2:'partly_cloudy',3:'cloudy',45:'foggy',51:'drizzle',61:'rain',63:'rain',65:'heavy_rain',71:'snow',80:'showers',95:'thunder'}; return {0:'sunny',1:'mostly_clear',2:'partly_cloudy',3:'cloudy',45:'foggy',51:'drizzle',61:'rain',63:'rain',65:'heavy_rain',71:'snow',80:'showers',95:'thunder'}[c] || 'unknown'; },
+  emoji: function(c){ var m={0:'sunny',1:'mostly_clear',2:'partly_cloudy',3:'cloudy',45:'foggy',51:'drizzle',61:'rain',63:'rain',65:'heavy_rain',71:'snow',80:'showers',95:'thunder'}; var e={'sunny':'☀️','mostly_clear':'🌤','partly_cloudy':'⛅','cloudy':'☁️','foggy':'🌫','drizzle':'🌦','rain':'🌧','heavy_rain':'🌧','snow':'🌨','showers':'🌦','thunder':'⛈','unknown':'🌡'}; return e[WETTER.icon(c)] || '🌡'; },
+  desc: function(c){ var d={0:'Klar',1:'Ueberwiegend klar',2:'Teilbewoelkt',3:'Bewoelkt',45:'Nebel',51:'Niesel',61:'Leichter Regen',63:'Regen',65:'Starker Regen',71:'Schnee',80:'Schauer',95:'Gewitter'}; return d[c] || '-'; },
+  fetch: async function(lat,lon) {
+    lat = lat||47.45; lon = lon||8.56;
+    var u = 'https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon+'&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode,windspeed_10m_max&current_weather=true&timezone=Europe%2FZurich&forecast_days=7';
+    var r = await fetch(u); return r.json();
+  },
+  loadMini: async function() {
+    var mini = document.getElementById('wetter-mini');
+    if (!mini) return;
+    try {
+      var d = await WETTER.fetch();
+      var cw = d.current_weather;
+      var days = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+      var html = '<div class="sec-hdr"><span class="sec-t">Wetter heute</span><button class="btn-sec" style="padding:4px 8px;font-size:11px" onclick="goTab('wetter')">Details</button></div>';
+      html += '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">';
+      html += '<div style="font-size:36px">'+WETTER.emoji(cw.weathercode)+'</div>';
+      html += '<div><div style="font-size:22px;font-weight:600">'+Math.round(cw.temperature)+'C</div>';
+      html += '<div style="font-size:12px;color:var(--muted)">'+WETTER.desc(cw.weathercode)+'</div>';
+      html += '<div style="font-size:11px;color:var(--hint)">'+d.daily.precipitation_sum[0].toFixed(1)+'mm | '+Math.round(cw.windspeed)+'km/h</div></div></div>';
+      html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">';
+      for (var i=1; i<=4; i++) {
+        var dd = new Date(d.daily.time[i]);
+        html += '<div class="wd"><div class="wd-day">'+days[dd.getDay()]+'</div><div class="wd-icon">'+WETTER.emoji(d.daily.weathercode[i])+'</div><div class="wd-t">'+Math.round(d.daily.temperature_2m_max[i])+'</div><div class="wd-p">'+d.daily.precipitation_sum[i].toFixed(1)+'mm</div></div>';
+      }
+      html += '</div>';
+      if (d.daily.precipitation_sum[1] > 5) {
+        html += '<div class="rec-box"><div class="rec-l">Empfehlung</div><div class="rec-t">Morgen Regen ('+d.daily.precipitation_sum[1].toFixed(1)+'mm) - Feldarbeit heute einplanen</div></div>';
+      }
+      mini.innerHTML = html;
+    } catch(e) { mini.innerHTML = '<p style="font-size:12px;color:var(--muted)">Wetter nicht verfuegbar</p>'; }
+  }
+};
+
+async function tabUebersicht(c) {
+  var results = await Promise.all([fsLoad('felder'),fsLoad('tiere'),fsLoad('maschinen'),fsLoad('erinnerungen'),fsLoad('tagesrapporte')]);
+  var felder=results[0],tiere=results[1],maschinen=results[2],erinnerungen=results[3],rapporte=results[4];
+  var heute = new Date().toISOString().split('T')[0];
+  var warns = maschinen.filter(function(m){return m.status==='wartung';}).length + felder.filter(function(f){return +f.naehrstoff<65;}).length;
+  var faellig = erinnerungen.filter(function(e){return e.datum&&e.datum<=heute&&!e.erledigt;});
+  if (warns>0||faellig.length>0) { var w=document.getElementById('tb-warn'); w.textContent=(warns+faellig.length)+' Hinweise'; w.style.display=''; }
+  var haGes = felder.reduce(function(a,f){return a+Number(f.groesse||0);},0);
+  var tierTotal = tiere.reduce(function(a,t){return a+Number(t.anzahl||0);},0);
+  var html = '<div class="mgrid">';
+  html += '<div class="mc"><div class="ml">Felder</div><div class="mv">'+felder.length+'</div><div class="ms">'+haGes.toFixed(1)+' ha</div></div>';
+  html += '<div class="mc"><div class="ml">Tiere</div><div class="mv">'+tierTotal+'</div><div class="ms">'+tiere.length+' Gruppen</div></div>';
+  html += '<div class="mc"><div class="ml">Rapporte heute</div><div class="mv">'+rapporte.filter(function(r){return r.datum===heute;}).length+'</div><div class="ms">von '+rapporte.length+' total</div></div>';
+  html += '<div class="mc"><div class="ml">Wartung faellig</div><div class="mv '+(warns>0?'md':'mu')+'">'+maschinen.filter(function(m){return m.status==='wartung';}).length+'</div><div class="ms">von '+maschinen.length+' Maschinen</div></div></div>';
+  html += '<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:14px;margin-bottom:14px">';
+  html += '<div class="card"><div class="sec-hdr"><span class="sec-t">Felduebersicht</span></div>';
+  if (felder.length===0) { html += '<p style="font-size:13px;color:var(--muted)">Keine Felder.</p>'; }
+  else { felder.forEach(function(f){ var p=Math.min(100,+f.naehrstoff||75); var col=p>=75?'var(--g600)':p>=55?'var(--a600)':'var(--r600)'; html+='<div class="prow"><span class="pname">'+esc(f.name)+' ('+esc(f.kultur||'-')+')</span><div class="pbw"><div class="pf" style="width:'+p+'%;background:'+col+'"></div></div><span class="pv">'+p+'%</span></div>'; }); }
+  html += '</div><div class="card" id="wetter-mini"><div class="load"><div class="spin"></div>Wetter...</div></div></div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">';
+  html += '<div class="card"><div class="sec-hdr"><span class="sec-t">Tiergesundheit</span></div>';
+  if (tiere.length===0) { html += '<p style="font-size:13px;color:var(--muted)">Keine Tiere.</p>'; }
+  else { tiere.forEach(function(t){ var h=+t.gesundheit||90; var col=h>=80?'var(--g600)':h>=60?'var(--a600)':'var(--r600)'; html+='<div class="prow"><span class="pname">'+esc(t.art)+'</span><div class="pbw"><div class="pf" style="width:'+h+'%;background:'+col+'"></div></div><span class="pv">'+h+'%</span></div>'; }); }
+  html += '</div><div class="card"><div class="sec-hdr"><span class="sec-t">Maschinen</span></div>';
+  if (maschinen.length===0) { html += '<p style="font-size:13px;color:var(--muted)">Keine Maschinen.</p>'; }
+  else { maschinen.slice(0,5).forEach(function(m){ html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px"><span style="font-size:12px;flex:1">'+esc(m.typ)+'</span><span class="sb '+(m.status==='ok'?'s-ok':m.status==='wartung'?'s-wa':'s-er')+'">'+esc(m.status||'ok')+'</span></div>'; }); }
+  html += '</div><div class="card"><div class="sec-hdr"><span class="sec-t">Erinnerungen</span></div><div class="al">';
+  if (faellig.length===0) { html += '<div class="ai ai-ok"><div class="ad dok"></div><div class="at">Alles erledigt</div></div>'; }
+  else { faellig.slice(0,4).forEach(function(e){ html+='<div class="ai ai-wa"><div class="ad dwa"></div><div><div class="at">'+esc(e.titel)+'</div><div class="atime">'+fmt.date(e.datum)+'</div></div></div>'; }); }
+  html += '</div></div></div>';
+  c.innerHTML = html;
+  WETTER.loadMini();
+}
+
+async function tabWetter(c) {
+  c.innerHTML = '<div class="load"><div class="spin"></div>Lade Open-Meteo (kostenlos, kein API-Key)...</div>';
+  try {
+    var d = await WETTER.fetch();
+    var cw = d.current_weather;
+    var days = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
+    var html = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><span class="chip cg">Open-Meteo</span><span class="chip cb">Kloten/Zuerich</span><span style="font-size:11px;color:var(--muted)">Kostenlos - Kein API-Key</span></div>';
+    html += '<div class="mgrid" style="margin-bottom:16px">';
+    html += '<div class="mc"><div class="ml">Aktuell</div><div class="mv">'+Math.round(cw.temperature)+'C</div><div class="ms">'+WETTER.emoji(cw.weathercode)+' '+WETTER.desc(cw.weathercode)+'</div></div>';
+    html += '<div class="mc"><div class="ml">Max/Min</div><div class="mv" style="font-size:18px">'+Math.round(d.daily.temperature_2m_max[0])+'/ '+Math.round(d.daily.temperature_2m_min[0])+'</div></div>';
+    html += '<div class="mc"><div class="ml">Niederschlag</div><div class="mv">'+d.daily.precipitation_sum[0].toFixed(1)+'<span style="font-size:14px">mm</span></div></div>';
+    html += '<div class="mc"><div class="ml">Wind max.</div><div class="mv">'+Math.round(d.daily.windspeed_10m_max[0])+'<span style="font-size:14px">km/h</span></div></div></div>';
+    html += '<div class="card" style="margin-bottom:14px"><div class="sec-hdr"><span class="sec-t">7-Tage Vorschau</span></div>';
+    html += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px">';
+    d.daily.time.forEach(function(t,i){
+      var dd = new Date(t);
+      html += '<div class="wd '+(i===0?'today':'')+'"><div class="wd-day">'+(i===0?'Heute':days[dd.getDay()].slice(0,2))+'</div><div class="wd-icon">'+WETTER.emoji(d.daily.weathercode[i])+'</div><div class="wd-t">'+Math.round(d.daily.temperature_2m_max[i])+'</div><div class="wd-p">'+d.daily.precipitation_sum[i].toFixed(1)+'mm</div></div>';
+    });
+    html += '</div></div><div class="card"><div class="sec-hdr"><span class="sec-t">Feldarbeits-Empfehlungen</span></div><div class="al">';
+    d.daily.time.forEach(function(t,i){
+      var prec=d.daily.precipitation_sum[i],temp=d.daily.temperature_2m_max[i],wind=d.daily.windspeed_10m_max[i];
+      var dd=new Date(t),tag=i===0?'Heute':days[dd.getDay()];
+      var cls='ai-ok',dot='dok',txt='Gute Bedingungen fuer Feldarbeit';
+      if(prec>10){cls='ai-er';dot='der';txt='Starker Regen - keine Feldarbeit';}
+      else if(prec>3){cls='ai-wa';dot='dwa';txt='Regen - Duenger/Spritzen verschieben';}
+      else if(wind>40){cls='ai-wa';dot='dwa';txt='Starker Wind - kein Spritzen';}
+      else if(temp<2){cls='ai-in';dot='din';txt='Frostgefahr - empfindliche Kulturen schuetzen';}
+      html += '<div class="ai '+cls+'"><div class="ad '+dot+'"></div><div><div class="at"><strong>'+tag+':</strong> '+txt+'</div><div class="atime">'+Math.round(temp)+'C - '+prec.toFixed(1)+'mm - '+Math.round(wind)+'km/h</div></div></div>';
+    });
+    html += '</div></div>';
+    c.innerHTML = html;
+  } catch(e) { c.innerHTML = '<div class="card"><p>Wetterdaten nicht verfuegbar.</p></div>'; }
+}
+
+async function tabKalender(c) {
+  var aufgaben = await fsLoad('aufgaben');
+  var now=new Date(),year=now.getFullYear(),month=now.getMonth();
+  var first=new Date(year,month,1),last=new Date(year,month+1,0);
+  var startDay=(first.getDay()+6)%7;
+  var cells=[];
+  for(var i=0;i<startDay;i++) cells.push(null);
+  for(var d=1;d<=last.getDate();d++) cells.push(d);
+  var todayStr=now.toISOString().split('T')[0];
+  var katCol={Aussaat:'kal-dot',Duengung:'kal-dot-a',Ernte:'kal-dot',Impfung:'kal-dot-r',Wartung:'kal-dot-a',Sonstiges:'kal-dot-b'};
+  var html = '<div class="sec-hdr"><span class="sec-t">'+now.toLocaleDateString('de-CH',{month:'long',year:'numeric'})+'</span><button class="btn-add" onclick="KALENDER.openNew()">+ Aufgabe</button></div>';
+  html += '<div class="card" style="margin-bottom:14px"><div class="kal-grid">';
+  ['Mo','Di','Mi','Do','Fr','Sa','So'].forEach(function(d){ html+='<div class="kal-day-hdr">'+d+'</div>'; });
+  cells.forEach(function(d){
+    if(!d){html+='<div></div>';return;}
+    var ds=year+'-'+String(month+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    var isT=ds===todayStr;
+    var tasks=aufgaben.filter(function(a){return a.datum===ds;});
+    html+='<div class="kal-cell '+(isT?'today':'')+'"><div class="kal-num" style="'+(isT?'color:var(--g700);font-weight:600':'')+'">'+d+'</div>';
+    tasks.slice(0,2).forEach(function(t){ html+='<span class="'+(katCol[t.kategorie]||'kal-dot')+'">'+esc(t.titel)+'</span>'; });
+    if(tasks.length>2) html+='<span style="font-size:9px;color:var(--muted)">+'+(tasks.length-2)+'</span>';
+    html+='</div>';
+  });
+  html += '</div></div><div class="sec-hdr"><span class="sec-t">Alle Aufgaben</span></div>';
+  html += '<div class="card" style="padding:0;overflow:hidden"><table class="dt"><thead><tr><th>Aufgabe</th><th>Kategorie</th><th>Datum</th><th>Bereich</th><th>Status</th><th></th></tr></thead><tbody>';
+  if(aufgaben.length===0){html+='<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">Keine Aufgaben.</td></tr>';}
+  else{aufgaben.sort(function(a,b){return a.datum>b.datum?1:-1;}).forEach(function(a){html+='<tr><td><strong>'+esc(a.titel)+'</strong></td><td><span class="sb s-in">'+esc(a.kategorie||'-')+'</span></td><td>'+fmt.date(a.datum)+'</td><td>'+esc(a.bereich||'-')+'</td><td><span class="sb '+(a.erledigt?'s-ok':'s-wa')+'">'+(a.erledigt?'Erledigt':'Offen')+'</span></td><td style="display:flex;gap:5px"><button class="btn-sec" style="padding:4px 8px;font-size:11px" onclick="KALENDER.toggle(''+a.id+'','+(!a.erledigt)+')">ok</button><button class="btn-del" onclick="KALENDER.del(''+a.id+'')">x</button></td></tr>';});}
+  html += '</tbody></table></div>';
+  c.innerHTML = html;
+}
+window.KALENDER = {
+  openNew: function(){M.open('Neue Aufgabe','<div class="frow"><div class="fg"><label class="fl2">Titel</label><input class="fi2" id="ka-t" placeholder="Raps duengen"></div><div class="fg"><label class="fl2">Kategorie</label><select class="fs" id="ka-k"><option>Aussaat</option><option>Duengung</option><option>Ernte</option><option>Impfung</option><option>Wartung</option><option>Sonstiges</option></select></div></div><div class="frow"><div class="fg"><label class="fl2">Datum</label><input class="fi2" id="ka-d" type="date"></div><div class="fg"><label class="fl2">Bereich</label><input class="fi2" id="ka-b" placeholder="Nordfeld"></div></div>','<button class="btn-sec" onclick="M.close()">Abbrechen</button><button class="btn-add" onclick="KALENDER.save()">Speichern</button>');},
+  save: async function(){var t=document.getElementById('ka-t').value.trim();if(!t){alert('Titel erforderlich');return;}await fsSave('aufgaben',uid2(),{titel:t,kategorie:document.getElementById('ka-k').value,datum:document.getElementById('ka-d').value,bereich:document.getElementById('ka-b').value,erledigt:false});M.close();goTab('kalender');},
+  toggle: async function(id,val){var all=await fsLoad('aufgaben');var a=all.find(function(x){return x.id===id;});if(a){await fsSave('aufgaben',id,Object.assign({},a,{erledigt:val}));goTab('kalender');}},
+  del: async function(id){if(confirm('Aufgabe loeschen?')){await fsDel('aufgaben',id);goTab('kalender');}}
+};
+
+async function tabRapporte(c) {
+  var rap = await fsLoad('tagesrapporte');
+  var html = '<div class="sec-hdr"><span class="sec-t">Tagesrapporte</span><button class="btn-add" onclick="RAP.openNew()">+ Neuer Rapport</button></div>';
+  html += '<div class="card" style="padding:0;overflow:hidden"><table class="dt"><thead><tr><th>Datum</th><th>Mitarbeiter</th><th>Taetigkeit</th><th>Feld</th><th>Stunden</th><th>Notizen</th><th></th></tr></thead><tbody>';
+  if(rap.length===0){html+='<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">Keine Rapporte.</td></tr>';}
+  else{rap.sort(function(a,b){return b.datum>a.datum?1:-1;}).forEach(function(r){html+='<tr><td>'+fmt.date(r.datum)+'</td><td><strong>'+esc(r.mitarbeiter)+'</strong></td><td>'+esc(r.taetigkeit||'-')+'</td><td>'+esc(r.feld||'-')+'</td><td><span class="sb s-in">'+esc(r.stunden||'-')+' h</span></td><td style="font-size:12px;color:var(--muted)">'+esc(r.notizen||'-')+'</td><td><button class="btn-del" onclick="RAP.del(''+r.id+'')">Loeschen</button></td></tr>';});}
+  html += '</tbody></table></div>';
+  c.innerHTML = html;
+}
+window.RAP = {
+  openNew: function(){M.open('Neuer Rapport','<div class="frow"><div class="fg"><label class="fl2">Datum</label><input class="fi2" id="rp-d" type="date" value="'+new Date().toISOString().split('T')[0]+'"></div><div class="fg"><label class="fl2">Mitarbeiter</label><input class="fi2" id="rp-m" placeholder="Max Mueller"></div></div><div class="frow"><div class="fg"><label class="fl2">Taetigkeit</label><select class="fs" id="rp-ta"><option>Pfluegen</option><option>Saeen</option><option>Duengen</option><option>Spritzen</option><option>Ernten</option><option>Tierbetreuung</option><option>Maschinenwartung</option><option>Sonstiges</option></select></div><div class="fg"><label class="fl2">Feld</label><input class="fi2" id="rp-f" placeholder="Nordfeld"></div></div><div class="frow"><div class="fg"><label class="fl2">Stunden</label><input class="fi2" id="rp-s" type="number" step="0.5" placeholder="8"></div><div class="fg"><label class="fl2">Notizen</label><input class="fi2" id="rp-n" placeholder="Optional"></div></div>','<button class="btn-sec" onclick="M.close()">Abbrechen</button><button class="btn-add" onclick="RAP.save()">Speichern</button>');},
+  save: async function(){var m=document.getElementById('rp-m').value.trim();if(!m){alert('Mitarbeiter erforderlich');return;}await fsSave('tagesrapporte',uid2(),{datum:document.getElementById('rp-d').value,mitarbeiter:m,taetigkeit:document.getElementById('rp-ta').value,feld:document.getElementById('rp-f').value,stunden:document.getElementById('rp-s').value,notizen:document.getElementById('rp-n').value});M.close();goTab('tagesrapporte');},
+  del: async function(id){if(confirm('Loeschen?')){await fsDel('tagesrapporte',id);goTab('tagesrapporte');}}
+};
+
+async function tabFelder(c) {
+  var felder = await fsLoad('felder');
+  var html = '<div class="sec-hdr"><span class="sec-t">Felder</span><button class="btn-add" onclick="FELDER.openNew()">+ Neues Feld</button></div>';
+  html += '<div class="card" style="padding:0;overflow:hidden"><table class="dt"><thead><tr><th>Name</th><th>Groesse</th><th>Kultur</th><th>Boden</th><th>Naehrstoff</th><th>Bewaesserung</th><th></th></tr></thead><tbody>';
+  if(felder.length===0){html+='<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">Keine Felder.</td></tr>';}
+  else{felder.forEach(function(f){var p=+f.naehrstoff||75;var s=p>=75?'s-ok':p>=55?'s-wa':'s-er';html+='<tr><td><strong>'+esc(f.name)+'</strong></td><td>'+fmt.ha(f.groesse)+'</td><td>'+esc(f.kultur||'-')+'</td><td>'+esc(f.boden||'-')+'</td><td><span class="sb '+s+'">'+p+'%</span></td><td>'+esc(f.bewaesserung||'-')+'</td><td><button class="btn-del" onclick="FELDER.del(''+f.id+'')">Loeschen</button></td></tr>';});}
+  html += '</tbody></table></div>';
+  c.innerHTML = html;
+}
+window.FELDER = {
+  openNew: function(){M.open('Neues Feld','<div class="frow"><div class="fg"><label class="fl2">Name</label><input class="fi2" id="f-n" placeholder="Nordfeld"></div><div class="fg"><label class="fl2">Groesse (ha)</label><input class="fi2" id="f-g" type="number" step="0.1" placeholder="5.5"></div></div><div class="frow"><div class="fg"><label class="fl2">Kultur</label><input class="fi2" id="f-k" placeholder="Weizen"></div><div class="fg"><label class="fl2">Boden</label><select class="fs" id="f-b"><option value="">-</option><option>Sandiger Lehm</option><option>Tonboden</option><option>Humus</option><option>Loessboden</option></select></div></div><div class="frow"><div class="fg"><label class="fl2">Naehrstoff %</label><input class="fi2" id="f-na" type="number" min="0" max="100" placeholder="75"></div><div class="fg"><label class="fl2">Bewaesserung</label><select class="fs" id="f-bw"><option value="">-</option><option>Troepfchen</option><option>Beregnung</option><option>Natuerlicher Regen</option></select></div></div>','<button class="btn-sec" onclick="M.close()">Abbrechen</button><button class="btn-add" onclick="FELDER.save()">Speichern</button>');},
+  save: async function(){var n=document.getElementById('f-n').value.trim();if(!n){alert('Name erforderlich');return;}await fsSave('felder',uid2(),{name:n,groesse:document.getElementById('f-g').value,kultur:document.getElementById('f-k').value,boden:document.getElementById('f-b').value,naehrstoff:document.getElementById('f-na').value||75,bewaesserung:document.getElementById('f-bw').value});M.close();goTab('felder');},
+  del: async function(id){if(confirm('Feld loeschen?')){await fsDel('felder',id);goTab('felder');}}
+};
+
+async function tabTiere(c) {
+  var tiere = await fsLoad('tiere');
+  var html = '<div class="sec-hdr"><span class="sec-t">Tierbestand</span><button class="btn-add" onclick="TIERE.openNew()">+ Neue Gruppe</button></div>';
+  html += '<div class="card" style="padding:0;overflow:hidden"><table class="dt"><thead><tr><th>Tierart</th><th>Anzahl</th><th>Gesundheit</th><th>Futter</th><th>Impfung</th><th>Notizen</th><th></th></tr></thead><tbody>';
+  if(tiere.length===0){html+='<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">Keine Tiere.</td></tr>';}
+  else{tiere.forEach(function(t){var h=+t.gesundheit||90;var s=h>=80?'s-ok':h>=60?'s-wa':'s-er';html+='<tr><td><strong>'+esc(t.art)+'</strong></td><td>'+esc(t.anzahl)+'</td><td><span class="sb '+s+'">'+h+'%</span></td><td><span class="sb s-in">'+esc(t.futter||'-')+'</span></td><td>'+fmt.date(t.impfung)+'</td><td style="font-size:12px;color:var(--muted)">'+esc(t.notizen||'-')+'</td><td><button class="btn-del" onclick="TIERE.del(''+t.id+'')">Loeschen</button></td></tr>';});}
+  html += '</tbody></table></div>';
+  c.innerHTML = html;
+}
+window.TIERE = {
+  openNew: function(){M.open('Neue Tiergruppe','<div class="frow"><div class="fg"><label class="fl2">Tierart</label><select class="fs" id="t-a"><option value="">-</option><option>Rinder</option><option>Schweine</option><option>Schafe</option><option>Gefluegel</option><option>Ziegen</option><option>Pferde</option></select></div><div class="fg"><label class="fl2">Anzahl</label><input class="fi2" id="t-n" type="number" placeholder="40"></div></div><div class="frow"><div class="fg"><label class="fl2">Gesundheit %</label><input class="fi2" id="t-g" type="number" min="0" max="100" placeholder="90"></div><div class="fg"><label class="fl2">Futter</label><select class="fs" id="t-f"><option value="">-</option><option>Bio</option><option>Standard</option><option>Premium</option></select></div></div><div class="frow"><div class="fg"><label class="fl2">Naechste Impfung</label><input class="fi2" id="t-i" type="date"></div><div class="fg"><label class="fl2">Notizen</label><input class="fi2" id="t-no" placeholder="Optional"></div></div>','<button class="btn-sec" onclick="M.close()">Abbrechen</button><button class="btn-add" onclick="TIERE.save()">Speichern</button>');},
+  save: async function(){var a=document.getElementById('t-a').value;if(!a){alert('Tierart erforderlich');return;}await fsSave('tiere',uid2(),{art:a,anzahl:document.getElementById('t-n').value,gesundheit:document.getElementById('t-g').value||90,futter:document.getElementById('t-f').value,impfung:document.getElementById('t-i').value,notizen:document.getElementById('t-no').value});M.close();goTab('tiere');},
+  del: async function(id){if(confirm('Loeschen?')){await fsDel('tiere',id);goTab('tiere');}}
+};
+
+async function tabMaschinen(c) {
+  var m = await fsLoad('maschinen');
+  var html = '<div class="sec-hdr"><span class="sec-t">Maschinen</span><button class="btn-add" onclick="MASCH.openNew()">+ Neue Maschine</button></div>';
+  html += '<div class="card" style="padding:0;overflow:hidden"><table class="dt"><thead><tr><th>Typ</th><th>Marke/Modell</th><th>Jahr</th><th>Status</th><th>Letzte Wartung</th><th>Naechste Wartung</th><th></th></tr></thead><tbody>';
+  if(m.length===0){html+='<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">Keine Maschinen.</td></tr>';}
+  else{m.forEach(function(x){var s={ok:'s-ok',wartung:'s-wa',reparatur:'s-er'}[x.status]||'s-in';html+='<tr><td><strong>'+esc(x.typ)+'</strong></td><td>'+esc(x.marke||'')+' '+esc(x.modell||'')+'</td><td>'+esc(x.baujahr||'-')+'</td><td><span class="sb '+s+'">'+esc(x.status||'ok')+'</span></td><td>'+fmt.date(x.wartLetzt)+'</td><td>'+fmt.date(x.wartNaechst)+'</td><td><button class="btn-del" onclick="MASCH.del(''+x.id+'')">Loeschen</button></td></tr>';});}
+  html += '</tbody></table></div>';
+  c.innerHTML = html;
+}
+window.MASCH = {
+  openNew: function(){M.open('Neue Maschine','<div class="frow"><div class="fg"><label class="fl2">Typ</label><select class="fs" id="ma-t"><option value="">-</option><option>Traktor</option><option>Maehddrescher</option><option>Pflug</option><option>Saemaschine</option><option>Guellesfass</option><option>Anhaenger</option><option>Sonstige</option></select></div><div class="fg"><label class="fl2">Marke</label><input class="fi2" id="ma-ma" placeholder="Massey Ferguson"></div></div><div class="frow"><div class="fg"><label class="fl2">Modell</label><input class="fi2" id="ma-mo" placeholder="MF 5710"></div><div class="fg"><label class="fl2">Baujahr</label><input class="fi2" id="ma-bj" type="number" placeholder="2018"></div></div><div class="frow"><div class="fg"><label class="fl2">Status</label><select class="fs" id="ma-s"><option value="ok">OK</option><option value="wartung">Wartung faellig</option><option value="reparatur">In Reparatur</option></select></div><div class="fg"><label class="fl2">Naechste Wartung</label><input class="fi2" id="ma-wn" type="date"></div></div>','<button class="btn-sec" onclick="M.close()">Abbrechen</button><button class="btn-add" onclick="MASCH.save()">Speichern</button>');},
+  save: async function(){var t=document.getElementById('ma-t').value;if(!t){alert('Typ erforderlich');return;}await fsSave('maschinen',uid2(),{typ:t,marke:document.getElementById('ma-ma').value,modell:document.getElementById('ma-mo').value,baujahr:document.getElementById('ma-bj').value,status:document.getElementById('ma-s').value,wartNaechst:document.getElementById('ma-wn').value,wartLetzt:new Date().toISOString().split('T')[0]});M.close();goTab('maschinen');},
+  del: async function(id){if(confirm('Loeschen?')){await fsDel('maschinen',id);goTab('maschinen');}}
+};
+
+async function tabLager(c) {
+  var lager = await fsLoad('lager');
+  var html = '<div class="sec-hdr"><span class="sec-t">Lager und Inventar</span><button class="btn-add" onclick="LAGER.openNew()">+ Artikel</button></div>';
+  html += '<div class="card" style="padding:0;overflow:hidden"><table class="dt"><thead><tr><th>Artikel</th><th>Kategorie</th><th>Bestand</th><th>Einheit</th><th>Min.</th><th>Lieferant</th><th>Status</th><th></th></tr></thead><tbody>';
+  if(lager.length===0){html+='<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">Kein Lager.</td></tr>';}
+  else{lager.forEach(function(l){var low=+l.bestand<+l.min;html+='<tr><td><strong>'+esc(l.name)+'</strong></td><td>'+esc(l.kategorie||'-')+'</td><td style="'+(low?'color:var(--r600);font-weight:600':'')+'">'+esc(l.bestand)+'</td><td>'+esc(l.einheit||'-')+'</td><td>'+esc(l.min||'-')+'</td><td>'+esc(l.lieferant||'-')+'</td><td><span class="sb '+(low?'s-er':'s-ok')+'">'+(low?'Nachfuellen':'OK')+'</span></td><td><button class="btn-del" onclick="LAGER.del(''+l.id+'')">Loeschen</button></td></tr>';});}
+  html += '</tbody></table></div>';
+  c.innerHTML = html;
+}
+window.LAGER = {
+  openNew: function(){M.open('Lagerartikel','<div class="frow"><div class="fg"><label class="fl2">Name</label><input class="fi2" id="la-n" placeholder="Kalkammonsalpeter"></div><div class="fg"><label class="fl2">Kategorie</label><select class="fs" id="la-k"><option>Duenger</option><option>Saatgut</option><option>Pflanzenschutz</option><option>Treibstoff</option><option>Ersatzteile</option></select></div></div><div class="frow"><div class="fg"><label class="fl2">Bestand</label><input class="fi2" id="la-b" type="number" placeholder="500"></div><div class="fg"><label class="fl2">Einheit</label><select class="fs" id="la-e"><option>kg</option><option>Liter</option><option>Saecke</option><option>Stueck</option><option>Tonnen</option></select></div></div><div class="frow"><div class="fg"><label class="fl2">Mindestbestand</label><input class="fi2" id="la-m" type="number" placeholder="100"></div><div class="fg"><label class="fl2">Lieferant</label><input class="fi2" id="la-l" placeholder="Landi Thurgau"></div></div>','<button class="btn-sec" onclick="M.close()">Abbrechen</button><button class="btn-add" onclick="LAGER.save()">Speichern</button>');},
+  save: async function(){var n=document.getElementById('la-n').value.trim();if(!n){alert('Name erforderlich');return;}await fsSave('lager',uid2(),{name:n,kategorie:document.getElementById('la-k').value,bestand:document.getElementById('la-b').value,einheit:document.getElementById('la-e').value,min:document.getElementById('la-m').value,lieferant:document.getElementById('la-l').value});M.close();goTab('lager');},
+  del: async function(id){if(confirm('Loeschen?')){await fsDel('lager',id);goTab('lager');}}
+};
+
+async function tabMitarbeiter(c) {
+  var results = await Promise.all([fsLoad('mitarbeiter'),fsLoad('tagesrapporte')]);
+  var ma=results[0],rap=results[1];
+  var now=new Date(),mo=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  var html = '<div class="sec-hdr"><span class="sec-t">Mitarbeiter</span><button class="btn-add" onclick="MITA.openNew()">+ Person</button></div>';
+  html += '<div class="card" style="padding:0;overflow:hidden"><table class="dt"><thead><tr><th>Name</th><th>Rolle</th><th>Stundenlohn</th><th>Std. Monat</th><th>Lohn Monat</th><th>AHV-Nr.</th><th></th></tr></thead><tbody>';
+  if(ma.length===0){html+='<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">Keine Mitarbeiter.</td></tr>';}
+  else{ma.forEach(function(p){var std=rap.filter(function(r){return r.mitarbeiter===p.name&&r.datum&&r.datum.startsWith(mo);}).reduce(function(a,r){return a+Number(r.stunden||0);},0);html+='<tr><td><strong>'+esc(p.name)+'</strong></td><td><span class="sb s-in">'+esc(p.rolle||'-')+'</span></td><td>'+fmt.chf(p.lohn)+'/h</td><td>'+std.toFixed(1)+' h</td><td>'+fmt.chf(std*Number(p.lohn||0))+'</td><td style="font-size:11px;color:var(--muted)">'+esc(p.ahv||'-')+'</td><td><button class="btn-del" onclick="MITA.del(''+p.id+'')">Loeschen</button></td></tr>';});}
+  html += '</tbody></table></div>';
+  c.innerHTML = html;
+}
+window.MITA = {
+  openNew: function(){M.open('Mitarbeiter','<div class="frow"><div class="fg"><label class="fl2">Name</label><input class="fi2" id="mi-n" placeholder="Max Mueller"></div><div class="fg"><label class="fl2">Rolle</label><select class="fs" id="mi-r"><option>Landwirt</option><option>Saisonarbeiter</option><option>Lehrling</option><option>Aushilfe</option></select></div></div><div class="frow"><div class="fg"><label class="fl2">Stundenlohn CHF</label><input class="fi2" id="mi-l" type="number" step="0.5" placeholder="28"></div><div class="fg"><label class="fl2">AHV-Nummer</label><input class="fi2" id="mi-ahv" placeholder="756.xxxx.xxxx.xx"></div></div>','<button class="btn-sec" onclick="M.close()">Abbrechen</button><button class="btn-add" onclick="MITA.save()">Speichern</button>');},
+  save: async function(){var n=document.getElementById('mi-n').value.trim();if(!n){alert('Name erforderlich');return;}await fsSave('mitarbeiter',uid2(),{name:n,rolle:document.getElementById('mi-r').value,lohn:document.getElementById('mi-l').value,ahv:document.getElementById('mi-ahv').value});M.close();goTab('mitarbeiter');},
+  del: async function(id){if(confirm('Loeschen?')){await fsDel('mitarbeiter',id);goTab('mitarbeiter');}}
+};
+
+async function tabRechnungen(c) {
+  var re = await fsLoad('rechnungen');
+  var total = re.reduce(function(a,r){return a+Number(r.betrag||0);},0);
+  var html = '<div class="sec-hdr"><span class="sec-t">Rechnungen</span><button class="btn-add" onclick="RECH.openNew()">+ Neue Rechnung</button></div>';
+  html += '<div class="mgrid" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:16px"><div class="mc"><div class="ml">Total netto</div><div class="mv" style="font-size:18px">'+fmt.chf(total)+'</div></div><div class="mc"><div class="ml">MWST 2.5%</div><div class="mv" style="font-size:18px">'+fmt.chf(total*0.025)+'</div></div><div class="mc"><div class="ml">Offen</div><div class="mv md" style="font-size:18px">'+re.filter(function(r){return !r.bezahlt;}).length+'</div></div></div>';
+  html += '<div class="card" style="padding:0;overflow:hidden"><table class="dt"><thead><tr><th>Nr.</th><th>Kunde</th><th>Datum</th><th>Betrag</th><th>MWST</th><th>Total</th><th>Status</th><th></th></tr></thead><tbody>';
+  if(re.length===0){html+='<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">Keine Rechnungen.</td></tr>';}
+  else{re.sort(function(a,b){return b.datum>a.datum?1:-1;}).forEach(function(r,i){var b=Number(r.betrag||0),mwst=b*Number(r.mwstSatz||0.025);html+='<tr><td><span class="sb s-in">RE-'+String(re.length-i).padStart(3,'0')+'</span></td><td><strong>'+esc(r.kunde)+'</strong></td><td>'+fmt.date(r.datum)+'</td><td>'+fmt.chf(b)+'</td><td>'+fmt.chf(mwst)+'</td><td><strong>'+fmt.chf(b+mwst)+'</strong></td><td><span class="sb '+(r.bezahlt?'s-ok':'s-wa')+'">'+(r.bezahlt?'Bezahlt':'Offen')+'</span></td><td style="display:flex;gap:4px"><button class="btn-sec" style="padding:4px 7px;font-size:11px" onclick="RECH.toggle(''+r.id+'','+(!r.bezahlt)+')">ok</button><button class="btn-del" onclick="RECH.del(''+r.id+'')">x</button></td></tr>';});}
+  html += '</tbody></table></div>';
+  c.innerHTML = html;
+}
+window.RECH = {
+  openNew: function(){M.open('Neue Rechnung','<div class="frow"><div class="fg"><label class="fl2">Kunde</label><input class="fi2" id="re-k" placeholder="Mueller GmbH"></div><div class="fg"><label class="fl2">Datum</label><input class="fi2" id="re-d" type="date" value="'+new Date().toISOString().split('T')[0]+'"></div></div><div class="frow"><div class="fg"><label class="fl2">Betrag netto CHF</label><input class="fi2" id="re-b" type="number" step="0.05" placeholder="1200.00"></div><div class="fg"><label class="fl2">MWST-Satz</label><select class="fs" id="re-mw"><option value="0.025">2.5% Nahrungsmittel</option><option value="0.077">7.7% Standard</option><option value="0">0% befreit</option></select></div></div><div class="fg"><label class="fl2">Beschreibung</label><textarea class="fta" id="re-desc" rows="2" placeholder="Lieferung Bio-Weizen..."></textarea></div>','<button class="btn-sec" onclick="M.close()">Abbrechen</button><button class="btn-add" onclick="RECH.save()">Speichern</button>');},
+  save: async function(){var k=document.getElementById('re-k').value.trim();if(!k){alert('Kunde erforderlich');return;}await fsSave('rechnungen',uid2(),{kunde:k,datum:document.getElementById('re-d').value,betrag:document.getElementById('re-b').value,mwstSatz:parseFloat(document.getElementById('re-mw').value),beschreibung:document.getElementById('re-desc').value,bezahlt:false});M.close();goTab('rechnungen');},
+  toggle: async function(id,val){var all=await fsLoad('rechnungen');var r=all.find(function(x){return x.id===id;});if(r){await fsSave('rechnungen',id,Object.assign({},r,{bezahlt:val}));goTab('rechnungen');}},
+  del: async function(id){if(confirm('Loeschen?')){await fsDel('rechnungen',id);goTab('rechnungen');}}
+};
+
+async function tabProdukte(c) {
+  var pr = await fsLoad('produkte');
+  var tw = pr.reduce(function(a,p){return a+(Number(p.preis||0)*Number(p.menge||0));},0);
+  var html = '<div class="sec-hdr"><span class="sec-t">Marktplatz</span><button class="btn-add" onclick="PROD.openNew()">+ Produkt</button></div>';
+  html += '<div class="mgrid" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:16px"><div class="mc"><div class="ml">Produkte</div><div class="mv">'+pr.length+'</div></div><div class="mc"><div class="ml">Warenwert</div><div class="mv" style="font-size:18px">'+fmt.chf(tw)+'</div></div><div class="mc"><div class="ml">MWST 2.5%</div><div class="mv" style="font-size:18px">'+fmt.chf(tw*0.025)+'</div></div></div>';
+  html += '<div class="card" style="padding:0;overflow:hidden"><table class="dt"><thead><tr><th>Produkt</th><th>Kategorie</th><th>Menge</th><th>Preis/Einheit</th><th>Gesamtwert</th><th>Verfuegbar bis</th><th></th></tr></thead><tbody>';
+  if(pr.length===0){html+='<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">Keine Produkte.</td></tr>';}
+  else{pr.forEach(function(p){html+='<tr><td><strong>'+esc(p.name)+'</strong></td><td>'+esc(p.kategorie||'-')+'</td><td>'+esc(p.menge||'-')+' '+esc(p.einheit||'')+'</td><td>'+fmt.chf(p.preis)+'</td><td>'+fmt.chf(Number(p.preis||0)*Number(p.menge||0))+'</td><td>'+fmt.date(p.verfBis)+'</td><td><button class="btn-del" onclick="PROD.del(''+p.id+'')">Loeschen</button></td></tr>';});}
+  html += '</tbody></table></div>';
+  c.innerHTML = html;
+}
+window.PROD = {
+  openNew: function(){M.open('Produkt inserieren','<div class="frow"><div class="fg"><label class="fl2">Name</label><input class="fi2" id="pr-n" placeholder="Bio-Weizen"></div><div class="fg"><label class="fl2">Kategorie</label><select class="fs" id="pr-k"><option>Getreide</option><option>Gemuese</option><option>Obst</option><option>Milchprodukte</option><option>Fleisch</option><option>Eier</option></select></div></div><div class="frow"><div class="fg"><label class="fl2">Menge</label><input class="fi2" id="pr-m" type="number" placeholder="500"></div><div class="fg"><label class="fl2">Einheit</label><select class="fs" id="pr-e"><option>kg</option><option>Liter</option><option>Stueck</option><option>Tonnen</option></select></div></div><div class="frow"><div class="fg"><label class="fl2">Preis/Einheit CHF</label><input class="fi2" id="pr-p" type="number" step="0.05" placeholder="1.20"></div><div class="fg"><label class="fl2">Verfuegbar bis</label><input class="fi2" id="pr-d" type="date"></div></div>','<button class="btn-sec" onclick="M.close()">Abbrechen</button><button class="btn-add" onclick="PROD.save()">Speichern</button>');},
+  save: async function(){var n=document.getElementById('pr-n').value.trim();if(!n){alert('Name erforderlich');return;}await fsSave('produkte',uid2(),{name:n,kategorie:document.getElementById('pr-k').value,menge:document.getElementById('pr-m').value,einheit:document.getElementById('pr-e').value,preis:document.getElementById('pr-p').value,verfBis:document.getElementById('pr-d').value});M.close();goTab('produkte');},
+  del: async function(id){if(confirm('Loeschen?')){await fsDel('produkte',id);goTab('produkte');}}
+};
+
+async function tabBuchhaltung(c) {
+  var results = await Promise.all([fsLoad('rechnungen'),fsLoad('tagesrapporte'),fsLoad('mitarbeiter')]);
+  var re=results[0],rap=results[1],ma=results[2];
+  var einnahmen=re.filter(function(r){return r.bezahlt;}).reduce(function(a,r){return a+Number(r.betrag||0);},0);
+  var lohn=rap.reduce(function(s,x){var p=ma.find(function(m){return m.name===x.mitarbeiter;});return s+(p?Number(x.stunden||0)*Number(p.lohn||0):0);},0);
+  var gewinn=einnahmen-lohn;
+  var html = '<div class="sec-hdr"><span class="sec-t">Buchhaltung '+new Date().getFullYear()+'</span></div>';
+  html += '<div class="mgrid" style="margin-bottom:18px"><div class="mc"><div class="ml">Einnahmen bezahlt</div><div class="mv mu" style="font-size:18px">'+fmt.chf(einnahmen)+'</div></div><div class="mc"><div class="ml">Lohnkosten</div><div class="mv md" style="font-size:18px">'+fmt.chf(lohn)+'</div></div><div class="mc"><div class="ml">Rohgewinn</div><div class="mv '+(gewinn>=0?'mu':'md')+'" style="font-size:18px">'+fmt.chf(gewinn)+'</div></div><div class="mc"><div class="ml">Offene Rechnungen</div><div class="mv">'+re.filter(function(r){return !r.bezahlt;}).length+'</div></div></div>';
+  html += '<div class="card"><div class="sec-hdr"><span class="sec-t">BLW Direktzahlungen Richtwerte 2026</span></div><table class="dt"><tr><td>Allg. Direktzahlungen</td><td style="text-align:right;font-weight:500">CHF 1050/ha</td></tr><tr><td>Bio-Beitrag</td><td style="text-align:right;font-weight:500">CHF 1600/ha</td></tr><tr><td>Biodiversitaet Stufe I</td><td style="text-align:right;font-weight:500">CHF 450/ha</td></tr></table><p style="font-size:10px;color:var(--hint);margin-top:8px">Richtwerte ohne Gewaehr - blw.admin.ch - Fuer Steuern Treuhander beiziehen</p></div>';
+  c.innerHTML = html;
+}
+
+async function tabErinnerungen(c) {
+  var er = await fsLoad('erinnerungen');
+  var heute = new Date().toISOString().split('T')[0];
+  var offen = er.filter(function(e){return !e.erledigt;}).length;
+  if(offen>0){var nb=document.getElementById('nb-er');nb.textContent=offen;nb.style.display='';}
+  var html = '<div class="sec-hdr"><span class="sec-t">Erinnerungen</span><button class="btn-add" onclick="ERIN.openNew()">+ Neue Erinnerung</button></div>';
+  html += '<div class="card" style="padding:0;overflow:hidden"><table class="dt"><thead><tr><th>Titel</th><th>Kategorie</th><th>Faellig</th><th>Status</th><th></th></tr></thead><tbody>';
+  if(er.length===0){html+='<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--muted)">Keine Erinnerungen.</td></tr>';}
+  else{er.sort(function(a,b){return a.datum>b.datum?1:-1;}).forEach(function(e){var late=e.datum&&e.datum<heute&&!e.erledigt;html+='<tr><td><strong style="'+(late?'color:var(--r600)':'')+'">'+esc(e.titel)+'</strong></td><td><span class="sb s-in">'+esc(e.kategorie||'-')+'</span></td><td style="'+(late?'color:var(--r600)':'')+'">'+fmt.date(e.datum)+(late?' !':'')+'</td><td><span class="sb '+(e.erledigt?'s-ok':'s-wa')+'">'+(e.erledigt?'Erledigt':'Offen')+'</span></td><td style="display:flex;gap:4px"><button class="btn-sec" style="padding:4px 7px;font-size:11px" onclick="ERIN.toggle(''+e.id+'','+(!e.erledigt)+')">ok</button><button class="btn-del" onclick="ERIN.del(''+e.id+'')">x</button></td></tr>';});}
+  html += '</tbody></table></div>';
+  c.innerHTML = html;
+}
+window.ERIN = {
+  openNew: function(){M.open('Neue Erinnerung','<div class="frow"><div class="fg"><label class="fl2">Titel</label><input class="fi2" id="er-t" placeholder="Traktor Service"></div><div class="fg"><label class="fl2">Kategorie</label><select class="fs" id="er-k"><option>Wartung</option><option>Impfung</option><option>Direktzahlungen</option><option>Aussaat</option><option>Ernte</option><option>Sonstiges</option></select></div></div><div class="frow"><div class="fg"><label class="fl2">Faellig am</label><input class="fi2" id="er-d" type="date"></div><div class="fg"><label class="fl2">Notiz</label><input class="fi2" id="er-n" placeholder="Optional"></div></div>','<button class="btn-sec" onclick="M.close()">Abbrechen</button><button class="btn-add" onclick="ERIN.save()">Speichern</button>');},
+  save: async function(){var t=document.getElementById('er-t').value.trim();if(!t){alert('Titel erforderlich');return;}await fsSave('erinnerungen',uid2(),{titel:t,kategorie:document.getElementById('er-k').value,datum:document.getElementById('er-d').value,notiz:document.getElementById('er-n').value,erledigt:false});M.close();goTab('erinnerungen');},
+  toggle: async function(id,val){var all=await fsLoad('erinnerungen');var e=all.find(function(x){return x.id===id;});if(e){await fsSave('erinnerungen',id,Object.assign({},e,{erledigt:val}));goTab('erinnerungen');}},
+  del: async function(id){if(confirm('Loeschen?')){await fsDel('erinnerungen',id);goTab('erinnerungen');}}
+};
+
+function tabBeratung(c) {
+  var links=[{e:'🌿',t:'Strickhof',d:'Agrarbildung ZH',u:'https://www.strickhof.ch'},{e:'🐄',t:'BLV Tiergesundheit',d:'Veterinaramt',u:'https://www.blv.admin.ch'},{e:'🇨🇭',t:'BLW Direktzahlungen',d:'Anforderungen 2026',u:'https://www.blw.admin.ch'},{e:'🌱',t:'Bio Suisse',d:'Umstieg auf Bio',u:'https://www.bio-suisse.ch'},{e:'🌦',t:'MeteoSchweiz',d:'Landw. Wetterdienst',u:'https://www.meteoswiss.admin.ch'},{e:'⚖️',t:'EDOEB',d:'Datenschutz revDSG',u:'https://www.edoeb.admin.ch'}];
+  var html = '<div class="sec-hdr"><span class="sec-t">Beratung und Links</span></div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">';
+  links.forEach(function(r){html+='<div class="card" style="cursor:pointer" onclick="window.open(''+r.u+'','_blank')"><div style="font-size:26px;margin-bottom:7px">'+r.e+'</div><div style="font-size:13px;font-weight:600;margin-bottom:3px">'+r.t+'</div><div style="font-size:11px;color:var(--muted);margin-bottom:8px">'+r.d+'</div><span class="chip cb" style="font-size:10px">Website</span></div>';});
+  html += '</div>';
+  c.innerHTML = html;
+}
+
+function tabEinstellungen(c) {
+  c.innerHTML = '<div class="sec-hdr"><span class="sec-t">Einstellungen</span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:14px"><div class="card"><div style="font-size:14px;font-weight:600;margin-bottom:12px">Betriebsdaten</div><div class="fg"><label class="fl2">Betriebsname</label><input class="fi2" placeholder="Musterhof Mueller"></div><div class="fg"><label class="fl2">Adresse</label><input class="fi2" placeholder="Dorfstrasse 1, 8400 Winterthur"></div><div class="fg"><label class="fl2">MWST-Nummer</label><input class="fi2" placeholder="CHE-123.456.789 MWST"></div><div class="fg"><label class="fl2">TVD-Betriebsnummer</label><input class="fi2" placeholder="CH 123456789"></div><button class="btn-add" onclick="alert('Gespeichert.')">Speichern</button></div><div class="card"><div style="font-size:14px;font-weight:600;margin-bottom:12px">Wetter-Standort (Open-Meteo)</div><div class="fg"><label class="fl2">Breitengrad</label><input class="fi2" placeholder="47.45 (Kloten)"></div><div class="fg"><label class="fl2">Laengengrad</label><input class="fi2" placeholder="8.56 (Kloten)"></div><p style="font-size:11px;color:var(--muted);margin-bottom:12px">Koordinaten via swisstopo.ch - Kein API-Key noetig</p><hr style="border:none;border-top:1px solid var(--brd);margin-bottom:12px"><div style="font-size:13px;font-weight:600;margin-bottom:6px">Datenschutz revDSG</div><p style="font-size:12px;color:var(--muted)">Firebase EU - kein Datenverkauf</p></div></div><div class="card" style="margin-top:14px"><p style="font-size:12px;color:var(--muted)">LandwirtApp v2.0 - ZeroGen Kloten ZH - MWST-konform - revDSG/EU-DSGVO</p></div>';
+}
+
+})();
+</script>
+<script type="module">
+import { initializeApp }   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, doc, setDoc, getDocs, deleteDoc, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey:            "DEIN_API_KEY",
+  authDomain:        "DEIN_PROJECT.firebaseapp.com",
+  projectId:         "DEIN_PROJECT_ID",
+  storageBucket:     "DEIN_PROJECT.appspot.com",
+  messagingSenderId: "DEIN_SENDER_ID",
+  appId:             "DEINE_APP_ID"
+};
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+window._col     = p      => collection(db, p);
+window._doc     = (p,id) => doc(db, p, id);
+window._set     = setDoc;
+window._getDocs = getDocs;
+window._del     = deleteDoc;
+window._ts      = serverTimestamp;
+
+document.getElementById('btn-login').addEventListener('click', async () => {
+  const email = document.getElementById('li-email').value.trim();
+  const pw    = document.getElementById('li-pw').value;
+  const el    = document.getElementById('auth-err');
+  el.style.display = 'none';
+  try {
+    await signInWithEmailAndPassword(auth, email, pw);
+  } catch(e) {
+    el.style.display = 'block';
+    el.textContent = e.code === 'auth/invalid-credential' ? 'E-Mail oder Passwort falsch.' : 'Fehler: ' + e.message;
+  }
+});
+
+document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('auth-screen').style.display !== 'none')
+    document.getElementById('btn-login').click();
+});
+
+onAuthStateChanged(auth, user => {
+  if (user) {
+    window._uid = user.uid;
+    document.getElementById('auth-screen').style.display  = 'none';
+    document.getElementById('app-shell').style.display    = 'flex';
+    document.getElementById('user-email-lbl').textContent = user.email;
+    document.getElementById('user-avatar').textContent    = user.email.slice(0,2).toUpperCase();
+    goTab('uebersicht');
+  } else {
+    window._uid = null;
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('app-shell').style.display   = 'none';
+  }
+});
+</script>
+</body>
+</html>
