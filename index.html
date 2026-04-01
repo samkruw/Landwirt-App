@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LandwirtApp v2 - Schweizer Edition</title>
+<title>LandwirtApp v2</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -31,13 +31,13 @@ body{font-family:var(--font);background:var(--bg);color:var(--txt);font-size:14p
 .bp:hover{background:var(--g800)}
 .auth-err{color:var(--r600);font-size:12px;margin-top:8px;display:none}
 #app-shell{display:none;flex-direction:row;min-height:100vh}
-.sidebar{width:220px;min-height:100vh;background:var(--sur);border-right:1px solid var(--brd);display:flex;flex-direction:column;position:sticky;top:0;flex-shrink:0}
+.sidebar{width:220px;min-height:100vh;background:var(--sur);border-right:1px solid var(--brd);display:flex;flex-direction:column;position:sticky;top:0;flex-shrink:0;overflow-y:auto}
 .s-logo{padding:16px 14px 14px;border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:9px}
 .s-logo-icon{width:30px;height:30px;background:var(--g700);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .s-logo-icon svg{width:17px;height:17px;fill:white}
 .s-logo-t{font-size:13px;font-weight:600}
 .s-logo-s{font-size:10px;color:var(--muted)}
-nav{flex:1;padding:8px;overflow-y:auto}
+nav{flex:1;padding:8px}
 .nav-sec{font-size:10px;font-weight:600;color:var(--hint);letter-spacing:.08em;text-transform:uppercase;padding:10px 8px 4px}
 .ni{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r);cursor:pointer;font-size:13px;color:var(--muted);transition:all .12s;margin-bottom:1px;user-select:none}
 .ni:hover{background:var(--gr50);color:var(--txt)}
@@ -107,7 +107,6 @@ table.dt tr:hover td{background:var(--gr50)}
 .wd-p{font-size:10px;color:var(--muted)}
 .rec-box{background:var(--a50);border:1px solid var(--a200);border-radius:var(--r);padding:9px 11px;margin-top:10px}
 .rec-l{font-size:10px;font-weight:600;color:var(--a600);margin-bottom:2px}
-.rec-t{font-size:12px}
 .al{display:flex;flex-direction:column;gap:6px}
 .ai{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border-radius:var(--r);border:1px solid transparent}
 .ai-ok{background:var(--g50);border-color:var(--g200)}.ai-wa{background:var(--a50);border-color:var(--a200)}.ai-er{background:var(--r50);border-color:var(--r200)}.ai-in{background:var(--b50);border-color:var(--b200)}
@@ -133,7 +132,6 @@ table.dt tr:hover td{background:var(--gr50)}
 </style>
 </head>
 <body>
-
 <div id="auth-screen">
   <div class="auth-card">
     <div class="auth-logo">
@@ -150,7 +148,6 @@ table.dt tr:hover td{background:var(--gr50)}
     <div id="auth-err" class="auth-err"></div>
   </div>
 </div>
-
 <div id="app-shell">
   <aside class="sidebar">
     <div class="s-logo">
@@ -196,10 +193,9 @@ table.dt tr:hover td{background:var(--gr50)}
         <span class="chip ca" id="tb-warn" style="display:none"></span>
       </div>
     </div>
-    <div class="content" id="content"><div class="load"><div class="spin"></div>Initialisiere...</div></div>
+    <div class="content" id="content"><div class="load"><div class="spin"></div>Laden...</div></div>
   </main>
 </div>
-
 <div class="mo" id="modal">
   <div class="mb">
     <div class="mt" id="m-title"></div>
@@ -207,15 +203,14 @@ table.dt tr:hover td{background:var(--gr50)}
     <div class="mf" id="m-foot"></div>
   </div>
 </div>
-
 <script>
-(function() {
+(function(){
 'use strict';
 
+// ── Datum ──
 document.getElementById('tb-date').textContent = new Date().toLocaleDateString('de-CH',{day:'2-digit',month:'long',year:'numeric'});
-document.getElementById('modal').addEventListener('click', function(e){ if(e.target===document.getElementById('modal')) M.close(); });
-document.querySelectorAll('.ni[data-tab]').forEach(function(el){ el.addEventListener('click', function(){ goTab(el.dataset.tab); }); });
 
+// ── Utils ──
 var fmt = {
   date: function(d){ return d ? new Date(d).toLocaleDateString('de-CH') : '-'; },
   chf:  function(n){ return 'CHF ' + Number(n||0).toLocaleString('de-CH',{minimumFractionDigits:2,maximumFractionDigits:2}); },
@@ -224,164 +219,236 @@ var fmt = {
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function uid2(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 
+// ── Modal ──
 window.M = {
-  open: function(title, body, foot) {
+  open: function(title, body, foot){
     document.getElementById('m-title').textContent = title;
     document.getElementById('m-body').innerHTML = body;
-    document.getElementById('m-foot').innerHTML = foot || '<button class="btn-sec" onclick="M.close()">Abbrechen</button>';
+    document.getElementById('m-foot').innerHTML = foot || '<button class="btn-sec" id="modal-cancel">Abbrechen</button>';
     document.getElementById('modal').classList.add('open');
+    var cancel = document.getElementById('modal-cancel');
+    if(cancel) cancel.addEventListener('click', M.close);
   },
-  close: function() { document.getElementById('modal').classList.remove('open'); }
+  close: function(){ document.getElementById('modal').classList.remove('open'); }
 };
+document.getElementById('modal').addEventListener('click', function(e){
+  if(e.target === document.getElementById('modal')) M.close();
+});
 
-async function fsLoad(sub) {
-  if (!window._uid) return [];
+// ── Firestore helpers ──
+async function fsLoad(sub){
+  if(!window._uid) return [];
   var snap = await window._getDocs(window._col('benutzer/'+window._uid+'/'+sub));
   return snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
 }
-async function fsSave(sub, id, data) {
-  var obj = Object.assign({}, data, {updAt: window._ts()});
-  await window._set(window._doc('benutzer/'+window._uid+'/'+sub, id), obj);
+async function fsSave(sub, id, data){
+  await window._set(window._doc('benutzer/'+window._uid+'/'+sub, id), Object.assign({}, data, {updAt:window._ts()}));
 }
-async function fsDel(sub, id) {
+async function fsDel(sub, id){
   await window._del(window._doc('benutzer/'+window._uid+'/'+sub, id));
 }
 
-window.goTab = function(name) {
-  document.querySelectorAll('.ni').forEach(function(el){ el.classList.toggle('active', el.dataset.tab===name); });
-  var tabs = {
-    uebersicht:    {t:'Uebersicht',     r:tabUebersicht},
-    kalender:      {t:'Kalender',       r:tabKalender},
-    tagesrapporte: {t:'Tagesrapporte',  r:tabRapporte},
-    felder:        {t:'Felder',         r:tabFelder},
-    tiere:         {t:'Tiere',          r:tabTiere},
-    maschinen:     {t:'Maschinen',      r:tabMaschinen},
-    lager:         {t:'Lager',          r:tabLager},
-    mitarbeiter:   {t:'Mitarbeiter',    r:tabMitarbeiter},
-    rechnungen:    {t:'Rechnungen',     r:tabRechnungen},
-    produkte:      {t:'Marktplatz',     r:tabProdukte},
-    buchhaltung:   {t:'Buchhaltung',    r:tabBuchhaltung},
-    wetter:        {t:'Wetter',         r:tabWetter},
-    erinnerungen:  {t:'Erinnerungen',   r:tabErinnerungen},
-    beratung:      {t:'Beratung',       r:tabBeratung},
-    einstellungen: {t:'Einstellungen',  r:tabEinstellungen}
-  };
-  var cfg = tabs[name];
-  if (!cfg) return;
-  document.getElementById('tb-title').textContent = cfg.t;
-  var c = document.getElementById('content');
-  c.innerHTML = '<div class="load"><div class="spin"></div>Laden...</div>';
-  cfg.r(c);
+// ── Navigation ──
+var TITELS = {
+  uebersicht:'Uebersicht', kalender:'Kalender', tagesrapporte:'Tagesrapporte',
+  felder:'Felder', tiere:'Tiere', maschinen:'Maschinen', lager:'Lager',
+  mitarbeiter:'Mitarbeiter', rechnungen:'Rechnungen', produkte:'Marktplatz',
+  buchhaltung:'Buchhaltung', wetter:'Wetter (Open-Meteo)', erinnerungen:'Erinnerungen',
+  beratung:'Beratung', einstellungen:'Einstellungen'
 };
 
-// WETTER
+window.goTab = function(name){
+  document.querySelectorAll('.ni').forEach(function(el){ el.classList.toggle('active', el.dataset.tab===name); });
+  document.getElementById('tb-title').textContent = TITELS[name] || name;
+  var c = document.getElementById('content');
+  c.innerHTML = '<div class="load"><div class="spin"></div>Laden...</div>';
+  var fns = {
+    uebersicht:tabUebersicht, kalender:tabKalender, tagesrapporte:tabRapporte,
+    felder:tabFelder, tiere:tabTiere, maschinen:tabMaschinen, lager:tabLager,
+    mitarbeiter:tabMitarbeiter, rechnungen:tabRechnungen, produkte:tabProdukte,
+    buchhaltung:tabBuchhaltung, wetter:tabWetter, erinnerungen:tabErinnerungen,
+    beratung:tabBeratung, einstellungen:tabEinstellungen
+  };
+  if(fns[name]) fns[name](c);
+};
+
+document.querySelectorAll('.ni[data-tab]').forEach(function(el){
+  el.addEventListener('click', function(){ goTab(el.dataset.tab); });
+});
+
+// ── Event delegation for data-action buttons ──
+// All delete/toggle buttons use data-action, data-id, data-sub attributes
+document.getElementById('content').addEventListener('click', function(e){
+  var btn = e.target.closest('[data-action]');
+  if(!btn) return;
+  var action = btn.dataset.action;
+  var id     = btn.dataset.id;
+  var sub    = btn.dataset.sub;
+  var val    = btn.dataset.val;
+
+  if(action === 'del'){
+    if(!confirm('Loeschen?')) return;
+    fsDel(sub, id).then(function(){ goTab(window._currentTab); });
+  }
+  else if(action === 'toggle'){
+    fsLoad(sub).then(function(all){
+      var item = all.find(function(x){ return x.id===id; });
+      if(!item) return;
+      item.erledigt = (val === 'true');
+      fsSave(sub, id, item).then(function(){ goTab(window._currentTab); });
+    });
+  }
+  else if(action === 'open-new'){
+    window[btn.dataset.handler]();
+  }
+  else if(action === 'goto'){
+    goTab(btn.dataset.target);
+  }
+});
+
+// Track current tab
+var _origGoTab = window.goTab;
+window.goTab = function(name){
+  window._currentTab = name;
+  _origGoTab(name);
+};
+
+// ── Helper: make button HTML using data attributes (NO onclick!) ──
+function delBtn(sub, id){
+  return '<button class="btn-del" data-action="del" data-sub="' + sub + '" data-id="' + id + '">Loeschen</button>';
+}
+function toggleBtn(sub, id, newVal, label){
+  return '<button class="btn-sec" style="padding:4px 7px;font-size:11px" data-action="toggle" data-sub="' + sub + '" data-id="' + id + '" data-val="' + newVal + '">' + label + '</button>';
+}
+function addBtn(handler, label){
+  return '<button class="btn-add" data-action="open-new" data-handler="' + handler + '">' + label + '</button>';
+}
+
+// ── WETTER ──
 var WETTER = {
   WMO: {0:'sunny',1:'mostly_clear',2:'partly_cloudy',3:'cloudy',45:'foggy',51:'drizzle',61:'rain',63:'rain',65:'heavy_rain',71:'snow',80:'showers',95:'thunder'},
-  icon: function(c){ var m={0:'sunny',1:'mostly_clear',2:'partly_cloudy',3:'cloudy',45:'foggy',51:'drizzle',61:'rain',63:'rain',65:'heavy_rain',71:'snow',80:'showers',95:'thunder'}; return {0:'sunny',1:'mostly_clear',2:'partly_cloudy',3:'cloudy',45:'foggy',51:'drizzle',61:'rain',63:'rain',65:'heavy_rain',71:'snow',80:'showers',95:'thunder'}[c] || 'unknown'; },
-  emoji: function(c){ var m={0:'sunny',1:'mostly_clear',2:'partly_cloudy',3:'cloudy',45:'foggy',51:'drizzle',61:'rain',63:'rain',65:'heavy_rain',71:'snow',80:'showers',95:'thunder'}; var e={'sunny':'☀️','mostly_clear':'🌤','partly_cloudy':'⛅','cloudy':'☁️','foggy':'🌫','drizzle':'🌦','rain':'🌧','heavy_rain':'🌧','snow':'🌨','showers':'🌦','thunder':'⛈','unknown':'🌡'}; return e[WETTER.icon(c)] || '🌡'; },
-  desc: function(c){ var d={0:'Klar',1:'Ueberwiegend klar',2:'Teilbewoelkt',3:'Bewoelkt',45:'Nebel',51:'Niesel',61:'Leichter Regen',63:'Regen',65:'Starker Regen',71:'Schnee',80:'Schauer',95:'Gewitter'}; return d[c] || '-'; },
-  fetch: async function(lat,lon) {
-    lat = lat||47.45; lon = lon||8.56;
-    var u = 'https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon+'&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode,windspeed_10m_max&current_weather=true&timezone=Europe%2FZurich&forecast_days=7';
-    var r = await fetch(u); return r.json();
+  emoji: function(c){ var m={0:'☀️',1:'🌤',2:'⛅',3:'☁️',45:'🌫',51:'🌦',61:'🌧',63:'🌧',65:'🌧',71:'🌨',80:'🌦',95:'⛈'}; return m[c]||'🌡'; },
+  desc:  function(c){ var m={0:'Klar',1:'Ueberwiegend klar',2:'Teilbewoelkt',3:'Bewoelkt',45:'Nebel',51:'Niesel',61:'Regen',63:'Regen',65:'Starker Regen',71:'Schnee',80:'Schauer',95:'Gewitter'}; return m[c]||'-'; },
+  fetch: async function(lat,lon){
+    lat=lat||47.45; lon=lon||8.56;
+    var u='https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon+'&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode,windspeed_10m_max&current_weather=true&timezone=Europe%2FZurich&forecast_days=7';
+    var r=await fetch(u); return r.json();
   },
-  loadMini: async function() {
-    var mini = document.getElementById('wetter-mini');
-    if (!mini) return;
-    try {
-      var d = await WETTER.fetch();
-      var cw = d.current_weather;
-      var days = ['So','Mo','Di','Mi','Do','Fr','Sa'];
-      var html = '<div class="sec-hdr"><span class="sec-t">Wetter heute</span><button class="btn-sec" style="padding:4px 8px;font-size:11px" onclick="goTab('wetter')">Details</button></div>';
-      html += '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">';
-      html += '<div style="font-size:36px">'+WETTER.emoji(cw.weathercode)+'</div>';
-      html += '<div><div style="font-size:22px;font-weight:600">'+Math.round(cw.temperature)+'C</div>';
-      html += '<div style="font-size:12px;color:var(--muted)">'+WETTER.desc(cw.weathercode)+'</div>';
-      html += '<div style="font-size:11px;color:var(--hint)">'+d.daily.precipitation_sum[0].toFixed(1)+'mm | '+Math.round(cw.windspeed)+'km/h</div></div></div>';
-      html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">';
-      for (var i=1; i<=4; i++) {
-        var dd = new Date(d.daily.time[i]);
-        html += '<div class="wd"><div class="wd-day">'+days[dd.getDay()]+'</div><div class="wd-icon">'+WETTER.emoji(d.daily.weathercode[i])+'</div><div class="wd-t">'+Math.round(d.daily.temperature_2m_max[i])+'</div><div class="wd-p">'+d.daily.precipitation_sum[i].toFixed(1)+'mm</div></div>';
+  loadMini: async function(){
+    var mini=document.getElementById('wetter-mini');
+    if(!mini) return;
+    try{
+      var d=await WETTER.fetch();
+      var cw=d.current_weather;
+      var days=['So','Mo','Di','Mi','Do','Fr','Sa'];
+      var el=document.createElement('div');
+      el.innerHTML='<div class="sec-hdr"><span class="sec-t">Wetter heute</span><button class="btn-sec" style="padding:4px 8px;font-size:11px" data-action="goto" data-target="wetter">Details</button></div>';
+      var info=document.createElement('div');
+      info.style.cssText='display:flex;align-items:center;gap:12px;margin-bottom:12px';
+      info.innerHTML='<div style="font-size:36px">'+WETTER.emoji(cw.weathercode)+'</div>'
+        +'<div><div style="font-size:22px;font-weight:600">'+Math.round(cw.temperature)+'&#176;C</div>'
+        +'<div style="font-size:12px;color:var(--muted)">'+WETTER.desc(cw.weathercode)+'</div>'
+        +'<div style="font-size:11px;color:var(--hint)">'+d.daily.precipitation_sum[0].toFixed(1)+'mm | '+Math.round(cw.windspeed)+'km/h</div></div>';
+      el.appendChild(info);
+      var grid=document.createElement('div');
+      grid.style.cssText='display:grid;grid-template-columns:repeat(4,1fr);gap:6px';
+      for(var i=1;i<=4;i++){
+        var dd=new Date(d.daily.time[i]);
+        var wd=document.createElement('div');
+        wd.className='wd';
+        wd.innerHTML='<div class="wd-day">'+days[dd.getDay()]+'</div>'
+          +'<div class="wd-icon">'+WETTER.emoji(d.daily.weathercode[i])+'</div>'
+          +'<div class="wd-t">'+Math.round(d.daily.temperature_2m_max[i])+'&#176;</div>'
+          +'<div class="wd-p">'+d.daily.precipitation_sum[i].toFixed(1)+'mm</div>';
+        grid.appendChild(wd);
       }
-      html += '</div>';
-      if (d.daily.precipitation_sum[1] > 5) {
-        html += '<div class="rec-box"><div class="rec-l">Empfehlung</div><div class="rec-t">Morgen Regen ('+d.daily.precipitation_sum[1].toFixed(1)+'mm) - Feldarbeit heute einplanen</div></div>';
+      el.appendChild(grid);
+      if(d.daily.precipitation_sum[1]>5){
+        var rb=document.createElement('div');
+        rb.className='rec-box';
+        rb.innerHTML='<div class="rec-l">Empfehlung</div><div>Morgen Regen ('+d.daily.precipitation_sum[1].toFixed(1)+'mm) - Feldarbeit heute einplanen</div>';
+        el.appendChild(rb);
       }
-      mini.innerHTML = html;
-    } catch(e) { mini.innerHTML = '<p style="font-size:12px;color:var(--muted)">Wetter nicht verfuegbar</p>'; }
+      mini.innerHTML='';
+      mini.appendChild(el);
+    }catch(err){ mini.innerHTML='<p style="font-size:12px;color:var(--muted)">Wetter nicht verfuegbar</p>'; }
   }
 };
 
-async function tabUebersicht(c) {
-  var results = await Promise.all([fsLoad('felder'),fsLoad('tiere'),fsLoad('maschinen'),fsLoad('erinnerungen'),fsLoad('tagesrapporte')]);
-  var felder=results[0],tiere=results[1],maschinen=results[2],erinnerungen=results[3],rapporte=results[4];
-  var heute = new Date().toISOString().split('T')[0];
-  var warns = maschinen.filter(function(m){return m.status==='wartung';}).length + felder.filter(function(f){return +f.naehrstoff<65;}).length;
-  var faellig = erinnerungen.filter(function(e){return e.datum&&e.datum<=heute&&!e.erledigt;});
-  if (warns>0||faellig.length>0) { var w=document.getElementById('tb-warn'); w.textContent=(warns+faellig.length)+' Hinweise'; w.style.display=''; }
-  var haGes = felder.reduce(function(a,f){return a+Number(f.groesse||0);},0);
-  var tierTotal = tiere.reduce(function(a,t){return a+Number(t.anzahl||0);},0);
-  var html = '<div class="mgrid">';
-  html += '<div class="mc"><div class="ml">Felder</div><div class="mv">'+felder.length+'</div><div class="ms">'+haGes.toFixed(1)+' ha</div></div>';
-  html += '<div class="mc"><div class="ml">Tiere</div><div class="mv">'+tierTotal+'</div><div class="ms">'+tiere.length+' Gruppen</div></div>';
-  html += '<div class="mc"><div class="ml">Rapporte heute</div><div class="mv">'+rapporte.filter(function(r){return r.datum===heute;}).length+'</div><div class="ms">von '+rapporte.length+' total</div></div>';
-  html += '<div class="mc"><div class="ml">Wartung faellig</div><div class="mv '+(warns>0?'md':'mu')+'">'+maschinen.filter(function(m){return m.status==='wartung';}).length+'</div><div class="ms">von '+maschinen.length+' Maschinen</div></div></div>';
-  html += '<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:14px;margin-bottom:14px">';
-  html += '<div class="card"><div class="sec-hdr"><span class="sec-t">Felduebersicht</span></div>';
-  if (felder.length===0) { html += '<p style="font-size:13px;color:var(--muted)">Keine Felder.</p>'; }
-  else { felder.forEach(function(f){ var p=Math.min(100,+f.naehrstoff||75); var col=p>=75?'var(--g600)':p>=55?'var(--a600)':'var(--r600)'; html+='<div class="prow"><span class="pname">'+esc(f.name)+' ('+esc(f.kultur||'-')+')</span><div class="pbw"><div class="pf" style="width:'+p+'%;background:'+col+'"></div></div><span class="pv">'+p+'%</span></div>'; }); }
-  html += '</div><div class="card" id="wetter-mini"><div class="load"><div class="spin"></div>Wetter...</div></div></div>';
-  html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">';
-  html += '<div class="card"><div class="sec-hdr"><span class="sec-t">Tiergesundheit</span></div>';
-  if (tiere.length===0) { html += '<p style="font-size:13px;color:var(--muted)">Keine Tiere.</p>'; }
-  else { tiere.forEach(function(t){ var h=+t.gesundheit||90; var col=h>=80?'var(--g600)':h>=60?'var(--a600)':'var(--r600)'; html+='<div class="prow"><span class="pname">'+esc(t.art)+'</span><div class="pbw"><div class="pf" style="width:'+h+'%;background:'+col+'"></div></div><span class="pv">'+h+'%</span></div>'; }); }
-  html += '</div><div class="card"><div class="sec-hdr"><span class="sec-t">Maschinen</span></div>';
-  if (maschinen.length===0) { html += '<p style="font-size:13px;color:var(--muted)">Keine Maschinen.</p>'; }
-  else { maschinen.slice(0,5).forEach(function(m){ html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px"><span style="font-size:12px;flex:1">'+esc(m.typ)+'</span><span class="sb '+(m.status==='ok'?'s-ok':m.status==='wartung'?'s-wa':'s-er')+'">'+esc(m.status||'ok')+'</span></div>'; }); }
-  html += '</div><div class="card"><div class="sec-hdr"><span class="sec-t">Erinnerungen</span></div><div class="al">';
-  if (faellig.length===0) { html += '<div class="ai ai-ok"><div class="ad dok"></div><div class="at">Alles erledigt</div></div>'; }
-  else { faellig.slice(0,4).forEach(function(e){ html+='<div class="ai ai-wa"><div class="ad dwa"></div><div><div class="at">'+esc(e.titel)+'</div><div class="atime">'+fmt.date(e.datum)+'</div></div></div>'; }); }
-  html += '</div></div></div>';
-  c.innerHTML = html;
+// ── UEBERSICHT ──
+async function tabUebersicht(c){
+  var res=await Promise.all([fsLoad('felder'),fsLoad('tiere'),fsLoad('maschinen'),fsLoad('erinnerungen'),fsLoad('tagesrapporte')]);
+  var felder=res[0],tiere=res[1],maschinen=res[2],erinnerungen=res[3],rapporte=res[4];
+  var heute=new Date().toISOString().split('T')[0];
+  var warns=maschinen.filter(function(m){return m.status==='wartung';}).length+felder.filter(function(f){return +f.naehrstoff<65;}).length;
+  var faellig=erinnerungen.filter(function(e){return e.datum&&e.datum<=heute&&!e.erledigt;});
+  if(warns>0||faellig.length>0){var w=document.getElementById('tb-warn');w.textContent=(warns+faellig.length)+' Hinweise';w.style.display='';}
+  var haGes=felder.reduce(function(a,f){return a+Number(f.groesse||0);},0);
+  var tierTotal=tiere.reduce(function(a,t){return a+Number(t.anzahl||0);},0);
+  var h='<div class="mgrid">'
+    +'<div class="mc"><div class="ml">Felder</div><div class="mv">'+felder.length+'</div><div class="ms">'+haGes.toFixed(1)+' ha</div></div>'
+    +'<div class="mc"><div class="ml">Tiere</div><div class="mv">'+tierTotal+'</div><div class="ms">'+tiere.length+' Gruppen</div></div>'
+    +'<div class="mc"><div class="ml">Rapporte heute</div><div class="mv">'+rapporte.filter(function(r){return r.datum===heute;}).length+'</div><div class="ms">von '+rapporte.length+' total</div></div>'
+    +'<div class="mc"><div class="ml">Wartung faellig</div><div class="mv '+(warns>0?'md':'mu')+'">'+maschinen.filter(function(m){return m.status==='wartung';}).length+'</div><div class="ms">von '+maschinen.length+'</div></div>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:14px;margin-bottom:14px">'
+    +'<div class="card"><div class="sec-hdr"><span class="sec-t">Felduebersicht</span></div>';
+  if(felder.length===0){h+='<p style="font-size:13px;color:var(--muted)">Keine Felder.</p>';}
+  else{felder.forEach(function(f){var p=Math.min(100,+f.naehrstoff||75);var col=p>=75?'var(--g600)':p>=55?'var(--a600)':'var(--r600)';h+='<div class="prow"><span class="pname">'+esc(f.name)+' ('+esc(f.kultur||'-')+')</span><div class="pbw"><div class="pf" style="width:'+p+'%;background:'+col+'"></div></div><span class="pv">'+p+'%</span></div>';});}
+  h+='</div><div class="card" id="wetter-mini"><div class="load"><div class="spin"></div>Wetter...</div></div></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">'
+    +'<div class="card"><div class="sec-hdr"><span class="sec-t">Tiergesundheit</span></div>';
+  if(tiere.length===0){h+='<p style="font-size:13px;color:var(--muted)">Keine Tiere.</p>';}
+  else{tiere.forEach(function(t){var hv=+t.gesundheit||90;var col=hv>=80?'var(--g600)':hv>=60?'var(--a600)':'var(--r600)';h+='<div class="prow"><span class="pname">'+esc(t.art)+'</span><div class="pbw"><div class="pf" style="width:'+hv+'%;background:'+col+'"></div></div><span class="pv">'+hv+'%</span></div>';});}
+  h+='</div><div class="card"><div class="sec-hdr"><span class="sec-t">Maschinen</span></div>';
+  if(maschinen.length===0){h+='<p style="font-size:13px;color:var(--muted)">Keine Maschinen.</p>';}
+  else{maschinen.slice(0,5).forEach(function(m){h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px"><span style="font-size:12px;flex:1">'+esc(m.typ)+'</span><span class="sb '+(m.status==='ok'?'s-ok':m.status==='wartung'?'s-wa':'s-er')+'">'+esc(m.status||'ok')+'</span></div>';});}
+  h+='</div><div class="card"><div class="sec-hdr"><span class="sec-t">Erinnerungen</span></div><div class="al">';
+  if(faellig.length===0){h+='<div class="ai ai-ok"><div class="ad dok"></div><div class="at">Alles erledigt</div></div>';}
+  else{faellig.slice(0,4).forEach(function(e){h+='<div class="ai ai-wa"><div class="ad dwa"></div><div><div class="at">'+esc(e.titel)+'</div><div class="atime">'+fmt.date(e.datum)+'</div></div></div>';});}
+  h+='</div></div></div>';
+  c.innerHTML=h;
   WETTER.loadMini();
 }
 
-async function tabWetter(c) {
-  c.innerHTML = '<div class="load"><div class="spin"></div>Lade Open-Meteo (kostenlos, kein API-Key)...</div>';
-  try {
-    var d = await WETTER.fetch();
-    var cw = d.current_weather;
-    var days = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
-    var html = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><span class="chip cg">Open-Meteo</span><span class="chip cb">Kloten/Zuerich</span><span style="font-size:11px;color:var(--muted)">Kostenlos - Kein API-Key</span></div>';
-    html += '<div class="mgrid" style="margin-bottom:16px">';
-    html += '<div class="mc"><div class="ml">Aktuell</div><div class="mv">'+Math.round(cw.temperature)+'C</div><div class="ms">'+WETTER.emoji(cw.weathercode)+' '+WETTER.desc(cw.weathercode)+'</div></div>';
-    html += '<div class="mc"><div class="ml">Max/Min</div><div class="mv" style="font-size:18px">'+Math.round(d.daily.temperature_2m_max[0])+'/ '+Math.round(d.daily.temperature_2m_min[0])+'</div></div>';
-    html += '<div class="mc"><div class="ml">Niederschlag</div><div class="mv">'+d.daily.precipitation_sum[0].toFixed(1)+'<span style="font-size:14px">mm</span></div></div>';
-    html += '<div class="mc"><div class="ml">Wind max.</div><div class="mv">'+Math.round(d.daily.windspeed_10m_max[0])+'<span style="font-size:14px">km/h</span></div></div></div>';
-    html += '<div class="card" style="margin-bottom:14px"><div class="sec-hdr"><span class="sec-t">7-Tage Vorschau</span></div>';
-    html += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px">';
+// ── WETTER TAB ──
+async function tabWetter(c){
+  c.innerHTML='<div class="load"><div class="spin"></div>Lade Open-Meteo...</div>';
+  try{
+    var d=await WETTER.fetch();
+    var cw=d.current_weather;
+    var days=['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
+    var h='<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><span class="chip cg">Open-Meteo</span><span class="chip cb">Kloten / Zuerich</span><span style="font-size:11px;color:var(--muted)">Kostenlos - Kein API-Key</span></div>'
+      +'<div class="mgrid" style="margin-bottom:16px">'
+      +'<div class="mc"><div class="ml">Aktuell</div><div class="mv">'+Math.round(cw.temperature)+'&#176;C</div><div class="ms">'+WETTER.emoji(cw.weathercode)+' '+WETTER.desc(cw.weathercode)+'</div></div>'
+      +'<div class="mc"><div class="ml">Max / Min</div><div class="mv" style="font-size:18px">'+Math.round(d.daily.temperature_2m_max[0])+'&#176; / '+Math.round(d.daily.temperature_2m_min[0])+'&#176;</div></div>'
+      +'<div class="mc"><div class="ml">Niederschlag</div><div class="mv">'+d.daily.precipitation_sum[0].toFixed(1)+'<span style="font-size:14px">mm</span></div></div>'
+      +'<div class="mc"><div class="ml">Wind max.</div><div class="mv">'+Math.round(d.daily.windspeed_10m_max[0])+'<span style="font-size:14px">km/h</span></div></div></div>'
+      +'<div class="card" style="margin-bottom:14px"><div class="sec-hdr"><span class="sec-t">7-Tage Vorschau</span></div>'
+      +'<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px">';
     d.daily.time.forEach(function(t,i){
-      var dd = new Date(t);
-      html += '<div class="wd '+(i===0?'today':'')+'"><div class="wd-day">'+(i===0?'Heute':days[dd.getDay()].slice(0,2))+'</div><div class="wd-icon">'+WETTER.emoji(d.daily.weathercode[i])+'</div><div class="wd-t">'+Math.round(d.daily.temperature_2m_max[i])+'</div><div class="wd-p">'+d.daily.precipitation_sum[i].toFixed(1)+'mm</div></div>';
+      var dd=new Date(t);
+      h+='<div class="wd '+(i===0?'today':'')+'"><div class="wd-day">'+(i===0?'Heute':days[dd.getDay()].slice(0,2))+'</div><div class="wd-icon">'+WETTER.emoji(d.daily.weathercode[i])+'</div><div class="wd-t">'+Math.round(d.daily.temperature_2m_max[i])+'&#176;</div><div class="wd-p">'+d.daily.precipitation_sum[i].toFixed(1)+'mm</div></div>';
     });
-    html += '</div></div><div class="card"><div class="sec-hdr"><span class="sec-t">Feldarbeits-Empfehlungen</span></div><div class="al">';
+    h+='</div></div><div class="card"><div class="sec-hdr"><span class="sec-t">Feldarbeits-Empfehlungen</span></div><div class="al">';
     d.daily.time.forEach(function(t,i){
       var prec=d.daily.precipitation_sum[i],temp=d.daily.temperature_2m_max[i],wind=d.daily.windspeed_10m_max[i];
       var dd=new Date(t),tag=i===0?'Heute':days[dd.getDay()];
-      var cls='ai-ok',dot='dok',txt='Gute Bedingungen fuer Feldarbeit';
+      var cls='ai-ok',dot='dok',txt='Gute Bedingungen';
       if(prec>10){cls='ai-er';dot='der';txt='Starker Regen - keine Feldarbeit';}
       else if(prec>3){cls='ai-wa';dot='dwa';txt='Regen - Duenger/Spritzen verschieben';}
       else if(wind>40){cls='ai-wa';dot='dwa';txt='Starker Wind - kein Spritzen';}
       else if(temp<2){cls='ai-in';dot='din';txt='Frostgefahr - empfindliche Kulturen schuetzen';}
-      html += '<div class="ai '+cls+'"><div class="ad '+dot+'"></div><div><div class="at"><strong>'+tag+':</strong> '+txt+'</div><div class="atime">'+Math.round(temp)+'C - '+prec.toFixed(1)+'mm - '+Math.round(wind)+'km/h</div></div></div>';
+      h+='<div class="ai '+cls+'"><div class="ad '+dot+'"></div><div><div class="at"><strong>'+tag+':</strong> '+txt+'</div><div class="atime">'+Math.round(temp)+'&#176;C - '+prec.toFixed(1)+'mm - '+Math.round(wind)+'km/h</div></div></div>';
     });
-    html += '</div></div>';
-    c.innerHTML = html;
-  } catch(e) { c.innerHTML = '<div class="card"><p>Wetterdaten nicht verfuegbar.</p></div>'; }
+    h+='</div></div>';
+    c.innerHTML=h;
+  }catch(err){c.innerHTML='<div class="card"><p>Wetterdaten nicht verfuegbar.</p></div>';}
 }
 
-async function tabKalender(c) {
-  var aufgaben = await fsLoad('aufgaben');
+// ── KALENDER ──
+async function tabKalender(c){
+  var aufgaben=await fsLoad('aufgaben');
   var now=new Date(),year=now.getFullYear(),month=now.getMonth();
   var first=new Date(year,month,1),last=new Date(year,month+1,0);
   var startDay=(first.getDay()+6)%7;
@@ -390,201 +457,376 @@ async function tabKalender(c) {
   for(var d=1;d<=last.getDate();d++) cells.push(d);
   var todayStr=now.toISOString().split('T')[0];
   var katCol={Aussaat:'kal-dot',Duengung:'kal-dot-a',Ernte:'kal-dot',Impfung:'kal-dot-r',Wartung:'kal-dot-a',Sonstiges:'kal-dot-b'};
-  var html = '<div class="sec-hdr"><span class="sec-t">'+now.toLocaleDateString('de-CH',{month:'long',year:'numeric'})+'</span><button class="btn-add" onclick="KALENDER.openNew()">+ Aufgabe</button></div>';
-  html += '<div class="card" style="margin-bottom:14px"><div class="kal-grid">';
-  ['Mo','Di','Mi','Do','Fr','Sa','So'].forEach(function(d){ html+='<div class="kal-day-hdr">'+d+'</div>'; });
+  var h='<div class="sec-hdr"><span class="sec-t">'+now.toLocaleDateString('de-CH',{month:'long',year:'numeric'})+'</span>'+addBtn('KALENDER_openNew','+ Aufgabe')+'</div>'
+    +'<div class="card" style="margin-bottom:14px"><div class="kal-grid">';
+  ['Mo','Di','Mi','Do','Fr','Sa','So'].forEach(function(d){ h+='<div class="kal-day-hdr">'+d+'</div>'; });
   cells.forEach(function(d){
-    if(!d){html+='<div></div>';return;}
+    if(!d){h+='<div></div>';return;}
     var ds=year+'-'+String(month+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
     var isT=ds===todayStr;
     var tasks=aufgaben.filter(function(a){return a.datum===ds;});
-    html+='<div class="kal-cell '+(isT?'today':'')+'"><div class="kal-num" style="'+(isT?'color:var(--g700);font-weight:600':'')+'">'+d+'</div>';
-    tasks.slice(0,2).forEach(function(t){ html+='<span class="'+(katCol[t.kategorie]||'kal-dot')+'">'+esc(t.titel)+'</span>'; });
-    if(tasks.length>2) html+='<span style="font-size:9px;color:var(--muted)">+'+(tasks.length-2)+'</span>';
-    html+='</div>';
+    h+='<div class="kal-cell '+(isT?'today':'')+'"><div class="kal-num" style="'+(isT?'color:var(--g700);font-weight:600':'')+'">'+d+'</div>';
+    tasks.slice(0,2).forEach(function(t){ h+='<span class="'+(katCol[t.kategorie]||'kal-dot')+'">'+esc(t.titel)+'</span>'; });
+    if(tasks.length>2) h+='<span style="font-size:9px;color:var(--muted)">+'+(tasks.length-2)+'</span>';
+    h+='</div>';
   });
-  html += '</div></div><div class="sec-hdr"><span class="sec-t">Alle Aufgaben</span></div>';
-  html += '<div class="card" style="padding:0;overflow:hidden"><table class="dt"><thead><tr><th>Aufgabe</th><th>Kategorie</th><th>Datum</th><th>Bereich</th><th>Status</th><th></th></tr></thead><tbody>';
-  if(aufgaben.length===0){html+='<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">Keine Aufgaben.</td></tr>';}
-  else{aufgaben.sort(function(a,b){return a.datum>b.datum?1:-1;}).forEach(function(a){html+='<tr><td><strong>'+esc(a.titel)+'</strong></td><td><span class="sb s-in">'+esc(a.kategorie||'-')+'</span></td><td>'+fmt.date(a.datum)+'</td><td>'+esc(a.bereich||'-')+'</td><td><span class="sb '+(a.erledigt?'s-ok':'s-wa')+'">'+(a.erledigt?'Erledigt':'Offen')+'</span></td><td style="display:flex;gap:5px"><button class="btn-sec" style="padding:4px 8px;font-size:11px" onclick="KALENDER.toggle(''+a.id+'','+(!a.erledigt)+')">ok</button><button class="btn-del" onclick="KALENDER.del(''+a.id+'')">x</button></td></tr>';});}
-  html += '</tbody></table></div>';
-  c.innerHTML = html;
+  h+='</div></div><div class="sec-hdr"><span class="sec-t">Alle Aufgaben</span></div>'
+    +'<div class="card" style="padding:0;overflow:hidden"><table class="dt"><thead><tr><th>Aufgabe</th><th>Kategorie</th><th>Datum</th><th>Bereich</th><th>Status</th><th></th></tr></thead><tbody>';
+  if(aufgaben.length===0){h+='<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">Keine Aufgaben.</td></tr>';}
+  else{
+    aufgaben.sort(function(a,b){return a.datum>b.datum?1:-1;}).forEach(function(a){
+      h+='<tr><td><strong>'+esc(a.titel)+'</strong></td>'
+        +'<td><span class="sb s-in">'+esc(a.kategorie||'-')+'</span></td>'
+        +'<td>'+fmt.date(a.datum)+'</td><td>'+esc(a.bereich||'-')+'</td>'
+        +'<td><span class="sb '+(a.erledigt?'s-ok':'s-wa')+'">'+(a.erledigt?'Erledigt':'Offen')+'</span></td>'
+        +'<td style="display:flex;gap:5px">'+toggleBtn('aufgaben',a.id,String(!a.erledigt),'ok')+delBtn('aufgaben',a.id)+'</td></tr>';
+    });
+  }
+  h+='</tbody></table></div>';
+  c.innerHTML=h;
 }
-window.KALENDER = {
-  openNew: function(){M.open('Neue Aufgabe','<div class="frow"><div class="fg"><label class="fl2">Titel</label><input class="fi2" id="ka-t" placeholder="Raps duengen"></div><div class="fg"><label class="fl2">Kategorie</label><select class="fs" id="ka-k"><option>Aussaat</option><option>Duengung</option><option>Ernte</option><option>Impfung</option><option>Wartung</option><option>Sonstiges</option></select></div></div><div class="frow"><div class="fg"><label class="fl2">Datum</label><input class="fi2" id="ka-d" type="date"></div><div class="fg"><label class="fl2">Bereich</label><input class="fi2" id="ka-b" placeholder="Nordfeld"></div></div>','<button class="btn-sec" onclick="M.close()">Abbrechen</button><button class="btn-add" onclick="KALENDER.save()">Speichern</button>');},
-  save: async function(){var t=document.getElementById('ka-t').value.trim();if(!t){alert('Titel erforderlich');return;}await fsSave('aufgaben',uid2(),{titel:t,kategorie:document.getElementById('ka-k').value,datum:document.getElementById('ka-d').value,bereich:document.getElementById('ka-b').value,erledigt:false});M.close();goTab('kalender');},
-  toggle: async function(id,val){var all=await fsLoad('aufgaben');var a=all.find(function(x){return x.id===id;});if(a){await fsSave('aufgaben',id,Object.assign({},a,{erledigt:val}));goTab('kalender');}},
-  del: async function(id){if(confirm('Aufgabe loeschen?')){await fsDel('aufgaben',id);goTab('kalender');}}
+window.KALENDER_openNew = function(){
+  M.open('Neue Aufgabe',
+    '<div class="frow"><div class="fg"><label class="fl2">Titel</label><input class="fi2" id="ka-t" placeholder="Raps duengen"></div>'
+    +'<div class="fg"><label class="fl2">Kategorie</label><select class="fs" id="ka-k"><option>Aussaat</option><option>Duengung</option><option>Ernte</option><option>Impfung</option><option>Wartung</option><option>Sonstiges</option></select></div></div>'
+    +'<div class="frow"><div class="fg"><label class="fl2">Datum</label><input class="fi2" id="ka-d" type="date"></div>'
+    +'<div class="fg"><label class="fl2">Bereich</label><input class="fi2" id="ka-b" placeholder="Nordfeld"></div></div>',
+    '<button class="btn-sec" id="modal-cancel">Abbrechen</button><button class="btn-add" id="ka-save">Speichern</button>'
+  );
+  document.getElementById('modal-cancel').addEventListener('click', M.close);
+  document.getElementById('ka-save').addEventListener('click', async function(){
+    var t=document.getElementById('ka-t').value.trim();
+    if(!t){alert('Titel erforderlich');return;}
+    await fsSave('aufgaben',uid2(),{titel:t,kategorie:document.getElementById('ka-k').value,datum:document.getElementById('ka-d').value,bereich:document.getElementById('ka-b').value,erledigt:false});
+    M.close(); goTab('kalender');
+  });
 };
 
-async function tabRapporte(c) {
-  var rap = await fsLoad('tagesrapporte');
-  var html = '<div class="sec-hdr"><span class="sec-t">Tagesrapporte</span><button class="btn-add" onclick="RAP.openNew()">+ Neuer Rapport</button></div>';
-  html += '<div class="card" style="padding:0;overflow:hidden"><table class="dt"><thead><tr><th>Datum</th><th>Mitarbeiter</th><th>Taetigkeit</th><th>Feld</th><th>Stunden</th><th>Notizen</th><th></th></tr></thead><tbody>';
-  if(rap.length===0){html+='<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">Keine Rapporte.</td></tr>';}
-  else{rap.sort(function(a,b){return b.datum>a.datum?1:-1;}).forEach(function(r){html+='<tr><td>'+fmt.date(r.datum)+'</td><td><strong>'+esc(r.mitarbeiter)+'</strong></td><td>'+esc(r.taetigkeit||'-')+'</td><td>'+esc(r.feld||'-')+'</td><td><span class="sb s-in">'+esc(r.stunden||'-')+' h</span></td><td style="font-size:12px;color:var(--muted)">'+esc(r.notizen||'-')+'</td><td><button class="btn-del" onclick="RAP.del(''+r.id+'')">Loeschen</button></td></tr>';});}
-  html += '</tbody></table></div>';
-  c.innerHTML = html;
+// ── TAGESRAPPORTE ──
+async function tabRapporte(c){
+  var rap=await fsLoad('tagesrapporte');
+  var h='<div class="sec-hdr"><span class="sec-t">Tagesrapporte</span>'+addBtn('RAP_openNew','+ Neuer Rapport')+'</div>'
+    +'<div class="card" style="padding:0;overflow:hidden"><table class="dt"><thead><tr><th>Datum</th><th>Mitarbeiter</th><th>Taetigkeit</th><th>Feld</th><th>Stunden</th><th></th></tr></thead><tbody>';
+  if(rap.length===0){h+='<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">Keine Rapporte.</td></tr>';}
+  else{rap.sort(function(a,b){return b.datum>a.datum?1:-1;}).forEach(function(r){h+='<tr><td>'+fmt.date(r.datum)+'</td><td><strong>'+esc(r.mitarbeiter)+'</strong></td><td>'+esc(r.taetigkeit||'-')+'</td><td>'+esc(r.feld||'-')+'</td><td><span class="sb s-in">'+esc(r.stunden||'-')+' h</span></td><td>'+delBtn('tagesrapporte',r.id)+'</td></tr>';}); }
+  h+='</tbody></table></div>';
+  c.innerHTML=h;
 }
-window.RAP = {
-  openNew: function(){M.open('Neuer Rapport','<div class="frow"><div class="fg"><label class="fl2">Datum</label><input class="fi2" id="rp-d" type="date" value="'+new Date().toISOString().split('T')[0]+'"></div><div class="fg"><label class="fl2">Mitarbeiter</label><input class="fi2" id="rp-m" placeholder="Max Mueller"></div></div><div class="frow"><div class="fg"><label class="fl2">Taetigkeit</label><select class="fs" id="rp-ta"><option>Pfluegen</option><option>Saeen</option><option>Duengen</option><option>Spritzen</option><option>Ernten</option><option>Tierbetreuung</option><option>Maschinenwartung</option><option>Sonstiges</option></select></div><div class="fg"><label class="fl2">Feld</label><input class="fi2" id="rp-f" placeholder="Nordfeld"></div></div><div class="frow"><div class="fg"><label class="fl2">Stunden</label><input class="fi2" id="rp-s" type="number" step="0.5" placeholder="8"></div><div class="fg"><label class="fl2">Notizen</label><input class="fi2" id="rp-n" placeholder="Optional"></div></div>','<button class="btn-sec" onclick="M.close()">Abbrechen</button><button class="btn-add" onclick="RAP.save()">Speichern</button>');},
-  save: async function(){var m=document.getElementById('rp-m').value.trim();if(!m){alert('Mitarbeiter erforderlich');return;}await fsSave('tagesrapporte',uid2(),{datum:document.getElementById('rp-d').value,mitarbeiter:m,taetigkeit:document.getElementById('rp-ta').value,feld:document.getElementById('rp-f').value,stunden:document.getElementById('rp-s').value,notizen:document.getElementById('rp-n').value});M.close();goTab('tagesrapporte');},
-  del: async function(id){if(confirm('Loeschen?')){await fsDel('tagesrapporte',id);goTab('tagesrapporte');}}
+window.RAP_openNew = function(){
+  M.open('Neuer Rapport',
+    '<div class="frow"><div class="fg"><label class="fl2">Datum</label><input class="fi2" id="rp-d" type="date" value="'+new Date().toISOString().split('T')[0]+'"></div>'
+    +'<div class="fg"><label class="fl2">Mitarbeiter</label><input class="fi2" id="rp-m" placeholder="Max Mueller"></div></div>'
+    +'<div class="frow"><div class="fg"><label class="fl2">Taetigkeit</label><select class="fs" id="rp-ta"><option>Pfluegen</option><option>Saeen</option><option>Duengen</option><option>Spritzen</option><option>Ernten</option><option>Tierbetreuung</option><option>Maschinenwartung</option><option>Sonstiges</option></select></div>'
+    +'<div class="fg"><label class="fl2">Feld</label><input class="fi2" id="rp-f" placeholder="Nordfeld"></div></div>'
+    +'<div class="frow"><div class="fg"><label class="fl2">Stunden</label><input class="fi2" id="rp-s" type="number" step="0.5" placeholder="8"></div>'
+    +'<div class="fg"><label class="fl2">Notizen</label><input class="fi2" id="rp-n" placeholder="Optional"></div></div>',
+    '<button class="btn-sec" id="modal-cancel">Abbrechen</button><button class="btn-add" id="rp-save">Speichern</button>'
+  );
+  document.getElementById('modal-cancel').addEventListener('click', M.close);
+  document.getElementById('rp-save').addEventListener('click', async function(){
+    var m=document.getElementById('rp-m').value.trim();
+    if(!m){alert('Mitarbeiter erforderlich');return;}
+    await fsSave('tagesrapporte',uid2(),{datum:document.getElementById('rp-d').value,mitarbeiter:m,taetigkeit:document.getElementById('rp-ta').value,feld:document.getElementById('rp-f').value,stunden:document.getElementById('rp-s').value,notizen:document.getElementById('rp-n').value});
+    M.close(); goTab('tagesrapporte');
+  });
 };
 
-async function tabFelder(c) {
-  var felder = await fsLoad('felder');
-  var html = '<div class="sec-hdr"><span class="sec-t">Felder</span><button class="btn-add" onclick="FELDER.openNew()">+ Neues Feld</button></div>';
-  html += '<div class="card" style="padding:0;overflow:hidden"><table class="dt"><thead><tr><th>Name</th><th>Groesse</th><th>Kultur</th><th>Boden</th><th>Naehrstoff</th><th>Bewaesserung</th><th></th></tr></thead><tbody>';
-  if(felder.length===0){html+='<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">Keine Felder.</td></tr>';}
-  else{felder.forEach(function(f){var p=+f.naehrstoff||75;var s=p>=75?'s-ok':p>=55?'s-wa':'s-er';html+='<tr><td><strong>'+esc(f.name)+'</strong></td><td>'+fmt.ha(f.groesse)+'</td><td>'+esc(f.kultur||'-')+'</td><td>'+esc(f.boden||'-')+'</td><td><span class="sb '+s+'">'+p+'%</span></td><td>'+esc(f.bewaesserung||'-')+'</td><td><button class="btn-del" onclick="FELDER.del(''+f.id+'')">Loeschen</button></td></tr>';});}
-  html += '</tbody></table></div>';
-  c.innerHTML = html;
+// ── FELDER ──
+async function tabFelder(c){
+  var felder=await fsLoad('felder');
+  var h='<div class="sec-hdr"><span class="sec-t">Felder</span>'+addBtn('FELDER_openNew','+ Neues Feld')+'</div>'
+    +'<div class="card" style="padding:0;overflow:hidden"><table class="dt"><thead><tr><th>Name</th><th>Groesse</th><th>Kultur</th><th>Boden</th><th>Naehrstoff</th><th></th></tr></thead><tbody>';
+  if(felder.length===0){h+='<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">Keine Felder.</td></tr>';}
+  else{felder.forEach(function(f){var p=+f.naehrstoff||75;var s=p>=75?'s-ok':p>=55?'s-wa':'s-er';h+='<tr><td><strong>'+esc(f.name)+'</strong></td><td>'+fmt.ha(f.groesse)+'</td><td>'+esc(f.kultur||'-')+'</td><td>'+esc(f.boden||'-')+'</td><td><span class="sb '+s+'">'+p+'%</span></td><td>'+delBtn('felder',f.id)+'</td></tr>';}); }
+  h+='</tbody></table></div>'; c.innerHTML=h;
 }
-window.FELDER = {
-  openNew: function(){M.open('Neues Feld','<div class="frow"><div class="fg"><label class="fl2">Name</label><input class="fi2" id="f-n" placeholder="Nordfeld"></div><div class="fg"><label class="fl2">Groesse (ha)</label><input class="fi2" id="f-g" type="number" step="0.1" placeholder="5.5"></div></div><div class="frow"><div class="fg"><label class="fl2">Kultur</label><input class="fi2" id="f-k" placeholder="Weizen"></div><div class="fg"><label class="fl2">Boden</label><select class="fs" id="f-b"><option value="">-</option><option>Sandiger Lehm</option><option>Tonboden</option><option>Humus</option><option>Loessboden</option></select></div></div><div class="frow"><div class="fg"><label class="fl2">Naehrstoff %</label><input class="fi2" id="f-na" type="number" min="0" max="100" placeholder="75"></div><div class="fg"><label class="fl2">Bewaesserung</label><select class="fs" id="f-bw"><option value="">-</option><option>Troepfchen</option><option>Beregnung</option><option>Natuerlicher Regen</option></select></div></div>','<button class="btn-sec" onclick="M.close()">Abbrechen</button><button class="btn-add" onclick="FELDER.save()">Speichern</button>');},
-  save: async function(){var n=document.getElementById('f-n').value.trim();if(!n){alert('Name erforderlich');return;}await fsSave('felder',uid2(),{name:n,groesse:document.getElementById('f-g').value,kultur:document.getElementById('f-k').value,boden:document.getElementById('f-b').value,naehrstoff:document.getElementById('f-na').value||75,bewaesserung:document.getElementById('f-bw').value});M.close();goTab('felder');},
-  del: async function(id){if(confirm('Feld loeschen?')){await fsDel('felder',id);goTab('felder');}}
+window.FELDER_openNew = function(){
+  M.open('Neues Feld',
+    '<div class="frow"><div class="fg"><label class="fl2">Name</label><input class="fi2" id="f-n" placeholder="Nordfeld"></div><div class="fg"><label class="fl2">Groesse (ha)</label><input class="fi2" id="f-g" type="number" step="0.1" placeholder="5.5"></div></div>'
+    +'<div class="frow"><div class="fg"><label class="fl2">Kultur</label><input class="fi2" id="f-k" placeholder="Weizen"></div><div class="fg"><label class="fl2">Boden</label><select class="fs" id="f-b"><option value="">-</option><option>Sandiger Lehm</option><option>Tonboden</option><option>Humus</option></select></div></div>'
+    +'<div class="frow"><div class="fg"><label class="fl2">Naehrstoff %</label><input class="fi2" id="f-na" type="number" min="0" max="100" placeholder="75"></div><div class="fg"><label class="fl2">Bewaesserung</label><select class="fs" id="f-bw"><option value="">-</option><option>Troepfchen</option><option>Beregnung</option><option>Natuerlicher Regen</option></select></div></div>',
+    '<button class="btn-sec" id="modal-cancel">Abbrechen</button><button class="btn-add" id="f-save">Speichern</button>'
+  );
+  document.getElementById('modal-cancel').addEventListener('click', M.close);
+  document.getElementById('f-save').addEventListener('click', async function(){
+    var n=document.getElementById('f-n').value.trim();
+    if(!n){alert('Name erforderlich');return;}
+    await fsSave('felder',uid2(),{name:n,groesse:document.getElementById('f-g').value,kultur:document.getElementById('f-k').value,boden:document.getElementById('f-b').value,naehrstoff:document.getElementById('f-na').value||75,bewaesserung:document.getElementById('f-bw').value});
+    M.close(); goTab('felder');
+  });
 };
 
-async function tabTiere(c) {
-  var tiere = await fsLoad('tiere');
-  var html = '<div class="sec-hdr"><span class="sec-t">Tierbestand</span><button class="btn-add" onclick="TIERE.openNew()">+ Neue Gruppe</button></div>';
-  html += '<div class="card" style="padding:0;overflow:hidden"><table class="dt"><thead><tr><th>Tierart</th><th>Anzahl</th><th>Gesundheit</th><th>Futter</th><th>Impfung</th><th>Notizen</th><th></th></tr></thead><tbody>';
-  if(tiere.length===0){html+='<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">Keine Tiere.</td></tr>';}
-  else{tiere.forEach(function(t){var h=+t.gesundheit||90;var s=h>=80?'s-ok':h>=60?'s-wa':'s-er';html+='<tr><td><strong>'+esc(t.art)+'</strong></td><td>'+esc(t.anzahl)+'</td><td><span class="sb '+s+'">'+h+'%</span></td><td><span class="sb s-in">'+esc(t.futter||'-')+'</span></td><td>'+fmt.date(t.impfung)+'</td><td style="font-size:12px;color:var(--muted)">'+esc(t.notizen||'-')+'</td><td><button class="btn-del" onclick="TIERE.del(''+t.id+'')">Loeschen</button></td></tr>';});}
-  html += '</tbody></table></div>';
-  c.innerHTML = html;
+// ── TIERE ──
+async function tabTiere(c){
+  var tiere=await fsLoad('tiere');
+  var h='<div class="sec-hdr"><span class="sec-t">Tierbestand</span>'+addBtn('TIERE_openNew','+ Neue Gruppe')+'</div>'
+    +'<div class="card" style="padding:0;overflow:hidden"><table class="dt"><thead><tr><th>Tierart</th><th>Anzahl</th><th>Gesundheit</th><th>Futter</th><th>Impfung</th><th></th></tr></thead><tbody>';
+  if(tiere.length===0){h+='<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">Keine Tiere.</td></tr>';}
+  else{tiere.forEach(function(t){var hv=+t.gesundheit||90;var s=hv>=80?'s-ok':hv>=60?'s-wa':'s-er';h+='<tr><td><strong>'+esc(t.art)+'</strong></td><td>'+esc(t.anzahl)+'</td><td><span class="sb '+s+'">'+hv+'%</span></td><td>'+esc(t.futter||'-')+'</td><td>'+fmt.date(t.impfung)+'</td><td>'+delBtn('tiere',t.id)+'</td></tr>';}); }
+  h+='</tbody></table></div>'; c.innerHTML=h;
 }
-window.TIERE = {
-  openNew: function(){M.open('Neue Tiergruppe','<div class="frow"><div class="fg"><label class="fl2">Tierart</label><select class="fs" id="t-a"><option value="">-</option><option>Rinder</option><option>Schweine</option><option>Schafe</option><option>Gefluegel</option><option>Ziegen</option><option>Pferde</option></select></div><div class="fg"><label class="fl2">Anzahl</label><input class="fi2" id="t-n" type="number" placeholder="40"></div></div><div class="frow"><div class="fg"><label class="fl2">Gesundheit %</label><input class="fi2" id="t-g" type="number" min="0" max="100" placeholder="90"></div><div class="fg"><label class="fl2">Futter</label><select class="fs" id="t-f"><option value="">-</option><option>Bio</option><option>Standard</option><option>Premium</option></select></div></div><div class="frow"><div class="fg"><label class="fl2">Naechste Impfung</label><input class="fi2" id="t-i" type="date"></div><div class="fg"><label class="fl2">Notizen</label><input class="fi2" id="t-no" placeholder="Optional"></div></div>','<button class="btn-sec" onclick="M.close()">Abbrechen</button><button class="btn-add" onclick="TIERE.save()">Speichern</button>');},
-  save: async function(){var a=document.getElementById('t-a').value;if(!a){alert('Tierart erforderlich');return;}await fsSave('tiere',uid2(),{art:a,anzahl:document.getElementById('t-n').value,gesundheit:document.getElementById('t-g').value||90,futter:document.getElementById('t-f').value,impfung:document.getElementById('t-i').value,notizen:document.getElementById('t-no').value});M.close();goTab('tiere');},
-  del: async function(id){if(confirm('Loeschen?')){await fsDel('tiere',id);goTab('tiere');}}
+window.TIERE_openNew = function(){
+  M.open('Neue Tiergruppe',
+    '<div class="frow"><div class="fg"><label class="fl2">Tierart</label><select class="fs" id="t-a"><option value="">-</option><option>Rinder</option><option>Schweine</option><option>Schafe</option><option>Gefluegel</option><option>Ziegen</option><option>Pferde</option></select></div><div class="fg"><label class="fl2">Anzahl</label><input class="fi2" id="t-n" type="number" placeholder="40"></div></div>'
+    +'<div class="frow"><div class="fg"><label class="fl2">Gesundheit %</label><input class="fi2" id="t-g" type="number" placeholder="90"></div><div class="fg"><label class="fl2">Futter</label><select class="fs" id="t-f"><option value="">-</option><option>Bio</option><option>Standard</option><option>Premium</option></select></div></div>'
+    +'<div class="frow"><div class="fg"><label class="fl2">Naechste Impfung</label><input class="fi2" id="t-i" type="date"></div><div class="fg"><label class="fl2">Notizen</label><input class="fi2" id="t-no"></div></div>',
+    '<button class="btn-sec" id="modal-cancel">Abbrechen</button><button class="btn-add" id="t-save">Speichern</button>'
+  );
+  document.getElementById('modal-cancel').addEventListener('click', M.close);
+  document.getElementById('t-save').addEventListener('click', async function(){
+    var a=document.getElementById('t-a').value;
+    if(!a){alert('Tierart erforderlich');return;}
+    await fsSave('tiere',uid2(),{art:a,anzahl:document.getElementById('t-n').value,gesundheit:document.getElementById('t-g').value||90,futter:document.getElementById('t-f').value,impfung:document.getElementById('t-i').value,notizen:document.getElementById('t-no').value});
+    M.close(); goTab('tiere');
+  });
 };
 
-async function tabMaschinen(c) {
-  var m = await fsLoad('maschinen');
-  var html = '<div class="sec-hdr"><span class="sec-t">Maschinen</span><button class="btn-add" onclick="MASCH.openNew()">+ Neue Maschine</button></div>';
-  html += '<div class="card" style="padding:0;overflow:hidden"><table class="dt"><thead><tr><th>Typ</th><th>Marke/Modell</th><th>Jahr</th><th>Status</th><th>Letzte Wartung</th><th>Naechste Wartung</th><th></th></tr></thead><tbody>';
-  if(m.length===0){html+='<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">Keine Maschinen.</td></tr>';}
-  else{m.forEach(function(x){var s={ok:'s-ok',wartung:'s-wa',reparatur:'s-er'}[x.status]||'s-in';html+='<tr><td><strong>'+esc(x.typ)+'</strong></td><td>'+esc(x.marke||'')+' '+esc(x.modell||'')+'</td><td>'+esc(x.baujahr||'-')+'</td><td><span class="sb '+s+'">'+esc(x.status||'ok')+'</span></td><td>'+fmt.date(x.wartLetzt)+'</td><td>'+fmt.date(x.wartNaechst)+'</td><td><button class="btn-del" onclick="MASCH.del(''+x.id+'')">Loeschen</button></td></tr>';});}
-  html += '</tbody></table></div>';
-  c.innerHTML = html;
+// ── MASCHINEN ──
+async function tabMaschinen(c){
+  var m=await fsLoad('maschinen');
+  var h='<div class="sec-hdr"><span class="sec-t">Maschinen</span>'+addBtn('MASCH_openNew','+ Neue Maschine')+'</div>'
+    +'<div class="card" style="padding:0;overflow:hidden"><table class="dt"><thead><tr><th>Typ</th><th>Marke/Modell</th><th>Jahr</th><th>Status</th><th>Naechste Wartung</th><th></th></tr></thead><tbody>';
+  if(m.length===0){h+='<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">Keine Maschinen.</td></tr>';}
+  else{m.forEach(function(x){var s={ok:'s-ok',wartung:'s-wa',reparatur:'s-er'}[x.status]||'s-in';h+='<tr><td><strong>'+esc(x.typ)+'</strong></td><td>'+esc(x.marke||'')+' '+esc(x.modell||'')+'</td><td>'+esc(x.baujahr||'-')+'</td><td><span class="sb '+s+'">'+esc(x.status||'ok')+'</span></td><td>'+fmt.date(x.wartNaechst)+'</td><td>'+delBtn('maschinen',x.id)+'</td></tr>';}); }
+  h+='</tbody></table></div>'; c.innerHTML=h;
 }
-window.MASCH = {
-  openNew: function(){M.open('Neue Maschine','<div class="frow"><div class="fg"><label class="fl2">Typ</label><select class="fs" id="ma-t"><option value="">-</option><option>Traktor</option><option>Maehddrescher</option><option>Pflug</option><option>Saemaschine</option><option>Guellesfass</option><option>Anhaenger</option><option>Sonstige</option></select></div><div class="fg"><label class="fl2">Marke</label><input class="fi2" id="ma-ma" placeholder="Massey Ferguson"></div></div><div class="frow"><div class="fg"><label class="fl2">Modell</label><input class="fi2" id="ma-mo" placeholder="MF 5710"></div><div class="fg"><label class="fl2">Baujahr</label><input class="fi2" id="ma-bj" type="number" placeholder="2018"></div></div><div class="frow"><div class="fg"><label class="fl2">Status</label><select class="fs" id="ma-s"><option value="ok">OK</option><option value="wartung">Wartung faellig</option><option value="reparatur">In Reparatur</option></select></div><div class="fg"><label class="fl2">Naechste Wartung</label><input class="fi2" id="ma-wn" type="date"></div></div>','<button class="btn-sec" onclick="M.close()">Abbrechen</button><button class="btn-add" onclick="MASCH.save()">Speichern</button>');},
-  save: async function(){var t=document.getElementById('ma-t').value;if(!t){alert('Typ erforderlich');return;}await fsSave('maschinen',uid2(),{typ:t,marke:document.getElementById('ma-ma').value,modell:document.getElementById('ma-mo').value,baujahr:document.getElementById('ma-bj').value,status:document.getElementById('ma-s').value,wartNaechst:document.getElementById('ma-wn').value,wartLetzt:new Date().toISOString().split('T')[0]});M.close();goTab('maschinen');},
-  del: async function(id){if(confirm('Loeschen?')){await fsDel('maschinen',id);goTab('maschinen');}}
+window.MASCH_openNew = function(){
+  M.open('Neue Maschine',
+    '<div class="frow"><div class="fg"><label class="fl2">Typ</label><select class="fs" id="ma-t"><option value="">-</option><option>Traktor</option><option>Maehdrescher</option><option>Pflug</option><option>Saemaschine</option><option>Guellesfass</option><option>Anhaenger</option><option>Sonstige</option></select></div><div class="fg"><label class="fl2">Marke</label><input class="fi2" id="ma-ma" placeholder="Massey Ferguson"></div></div>'
+    +'<div class="frow"><div class="fg"><label class="fl2">Modell</label><input class="fi2" id="ma-mo" placeholder="MF 5710"></div><div class="fg"><label class="fl2">Baujahr</label><input class="fi2" id="ma-bj" type="number" placeholder="2018"></div></div>'
+    +'<div class="frow"><div class="fg"><label class="fl2">Status</label><select class="fs" id="ma-s"><option value="ok">OK</option><option value="wartung">Wartung faellig</option><option value="reparatur">In Reparatur</option></select></div><div class="fg"><label class="fl2">Naechste Wartung</label><input class="fi2" id="ma-wn" type="date"></div></div>',
+    '<button class="btn-sec" id="modal-cancel">Abbrechen</button><button class="btn-add" id="ma-save">Speichern</button>'
+  );
+  document.getElementById('modal-cancel').addEventListener('click', M.close);
+  document.getElementById('ma-save').addEventListener('click', async function(){
+    var t=document.getElementById('ma-t').value;
+    if(!t){alert('Typ erforderlich');return;}
+    await fsSave('maschinen',uid2(),{typ:t,marke:document.getElementById('ma-ma').value,modell:document.getElementById('ma-mo').value,baujahr:document.getElementById('ma-bj').value,status:document.getElementById('ma-s').value,wartNaechst:document.getElementById('ma-wn').value,wartLetzt:new Date().toISOString().split('T')[0]});
+    M.close(); goTab('maschinen');
+  });
 };
 
-async function tabLager(c) {
-  var lager = await fsLoad('lager');
-  var html = '<div class="sec-hdr"><span class="sec-t">Lager und Inventar</span><button class="btn-add" onclick="LAGER.openNew()">+ Artikel</button></div>';
-  html += '<div class="card" style="padding:0;overflow:hidden"><table class="dt"><thead><tr><th>Artikel</th><th>Kategorie</th><th>Bestand</th><th>Einheit</th><th>Min.</th><th>Lieferant</th><th>Status</th><th></th></tr></thead><tbody>';
-  if(lager.length===0){html+='<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">Kein Lager.</td></tr>';}
-  else{lager.forEach(function(l){var low=+l.bestand<+l.min;html+='<tr><td><strong>'+esc(l.name)+'</strong></td><td>'+esc(l.kategorie||'-')+'</td><td style="'+(low?'color:var(--r600);font-weight:600':'')+'">'+esc(l.bestand)+'</td><td>'+esc(l.einheit||'-')+'</td><td>'+esc(l.min||'-')+'</td><td>'+esc(l.lieferant||'-')+'</td><td><span class="sb '+(low?'s-er':'s-ok')+'">'+(low?'Nachfuellen':'OK')+'</span></td><td><button class="btn-del" onclick="LAGER.del(''+l.id+'')">Loeschen</button></td></tr>';});}
-  html += '</tbody></table></div>';
-  c.innerHTML = html;
+// ── LAGER ──
+async function tabLager(c){
+  var lager=await fsLoad('lager');
+  var h='<div class="sec-hdr"><span class="sec-t">Lager</span>'+addBtn('LAGER_openNew','+ Artikel')+'</div>'
+    +'<div class="card" style="padding:0;overflow:hidden"><table class="dt"><thead><tr><th>Artikel</th><th>Kategorie</th><th>Bestand</th><th>Einheit</th><th>Min.</th><th>Status</th><th></th></tr></thead><tbody>';
+  if(lager.length===0){h+='<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">Kein Lager.</td></tr>';}
+  else{lager.forEach(function(l){var low=+l.bestand<+l.min;h+='<tr><td><strong>'+esc(l.name)+'</strong></td><td>'+esc(l.kategorie||'-')+'</td><td style="'+(low?'color:var(--r600);font-weight:600':'')+'">'+esc(l.bestand)+'</td><td>'+esc(l.einheit||'-')+'</td><td>'+esc(l.min||'-')+'</td><td><span class="sb '+(low?'s-er':'s-ok')+'">'+(low?'Nachfuellen':'OK')+'</span></td><td>'+delBtn('lager',l.id)+'</td></tr>';}); }
+  h+='</tbody></table></div>'; c.innerHTML=h;
 }
-window.LAGER = {
-  openNew: function(){M.open('Lagerartikel','<div class="frow"><div class="fg"><label class="fl2">Name</label><input class="fi2" id="la-n" placeholder="Kalkammonsalpeter"></div><div class="fg"><label class="fl2">Kategorie</label><select class="fs" id="la-k"><option>Duenger</option><option>Saatgut</option><option>Pflanzenschutz</option><option>Treibstoff</option><option>Ersatzteile</option></select></div></div><div class="frow"><div class="fg"><label class="fl2">Bestand</label><input class="fi2" id="la-b" type="number" placeholder="500"></div><div class="fg"><label class="fl2">Einheit</label><select class="fs" id="la-e"><option>kg</option><option>Liter</option><option>Saecke</option><option>Stueck</option><option>Tonnen</option></select></div></div><div class="frow"><div class="fg"><label class="fl2">Mindestbestand</label><input class="fi2" id="la-m" type="number" placeholder="100"></div><div class="fg"><label class="fl2">Lieferant</label><input class="fi2" id="la-l" placeholder="Landi Thurgau"></div></div>','<button class="btn-sec" onclick="M.close()">Abbrechen</button><button class="btn-add" onclick="LAGER.save()">Speichern</button>');},
-  save: async function(){var n=document.getElementById('la-n').value.trim();if(!n){alert('Name erforderlich');return;}await fsSave('lager',uid2(),{name:n,kategorie:document.getElementById('la-k').value,bestand:document.getElementById('la-b').value,einheit:document.getElementById('la-e').value,min:document.getElementById('la-m').value,lieferant:document.getElementById('la-l').value});M.close();goTab('lager');},
-  del: async function(id){if(confirm('Loeschen?')){await fsDel('lager',id);goTab('lager');}}
+window.LAGER_openNew = function(){
+  M.open('Lagerartikel',
+    '<div class="frow"><div class="fg"><label class="fl2">Name</label><input class="fi2" id="la-n" placeholder="Kalkammonsalpeter"></div><div class="fg"><label class="fl2">Kategorie</label><select class="fs" id="la-k"><option>Duenger</option><option>Saatgut</option><option>Pflanzenschutz</option><option>Treibstoff</option><option>Ersatzteile</option></select></div></div>'
+    +'<div class="frow"><div class="fg"><label class="fl2">Bestand</label><input class="fi2" id="la-b" type="number" placeholder="500"></div><div class="fg"><label class="fl2">Einheit</label><select class="fs" id="la-e"><option>kg</option><option>Liter</option><option>Saecke</option><option>Stueck</option><option>Tonnen</option></select></div></div>'
+    +'<div class="frow"><div class="fg"><label class="fl2">Mindestbestand</label><input class="fi2" id="la-m" type="number" placeholder="100"></div><div class="fg"><label class="fl2">Lieferant</label><input class="fi2" id="la-l" placeholder="Landi Thurgau"></div></div>',
+    '<button class="btn-sec" id="modal-cancel">Abbrechen</button><button class="btn-add" id="la-save">Speichern</button>'
+  );
+  document.getElementById('modal-cancel').addEventListener('click', M.close);
+  document.getElementById('la-save').addEventListener('click', async function(){
+    var n=document.getElementById('la-n').value.trim();
+    if(!n){alert('Name erforderlich');return;}
+    await fsSave('lager',uid2(),{name:n,kategorie:document.getElementById('la-k').value,bestand:document.getElementById('la-b').value,einheit:document.getElementById('la-e').value,min:document.getElementById('la-m').value,lieferant:document.getElementById('la-l').value});
+    M.close(); goTab('lager');
+  });
 };
 
-async function tabMitarbeiter(c) {
-  var results = await Promise.all([fsLoad('mitarbeiter'),fsLoad('tagesrapporte')]);
-  var ma=results[0],rap=results[1];
+// ── MITARBEITER ──
+async function tabMitarbeiter(c){
+  var res=await Promise.all([fsLoad('mitarbeiter'),fsLoad('tagesrapporte')]);
+  var ma=res[0],rap=res[1];
   var now=new Date(),mo=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
-  var html = '<div class="sec-hdr"><span class="sec-t">Mitarbeiter</span><button class="btn-add" onclick="MITA.openNew()">+ Person</button></div>';
-  html += '<div class="card" style="padding:0;overflow:hidden"><table class="dt"><thead><tr><th>Name</th><th>Rolle</th><th>Stundenlohn</th><th>Std. Monat</th><th>Lohn Monat</th><th>AHV-Nr.</th><th></th></tr></thead><tbody>';
-  if(ma.length===0){html+='<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">Keine Mitarbeiter.</td></tr>';}
-  else{ma.forEach(function(p){var std=rap.filter(function(r){return r.mitarbeiter===p.name&&r.datum&&r.datum.startsWith(mo);}).reduce(function(a,r){return a+Number(r.stunden||0);},0);html+='<tr><td><strong>'+esc(p.name)+'</strong></td><td><span class="sb s-in">'+esc(p.rolle||'-')+'</span></td><td>'+fmt.chf(p.lohn)+'/h</td><td>'+std.toFixed(1)+' h</td><td>'+fmt.chf(std*Number(p.lohn||0))+'</td><td style="font-size:11px;color:var(--muted)">'+esc(p.ahv||'-')+'</td><td><button class="btn-del" onclick="MITA.del(''+p.id+'')">Loeschen</button></td></tr>';});}
-  html += '</tbody></table></div>';
-  c.innerHTML = html;
+  var h='<div class="sec-hdr"><span class="sec-t">Mitarbeiter</span>'+addBtn('MITA_openNew','+ Person')+'</div>'
+    +'<div class="card" style="padding:0;overflow:hidden"><table class="dt"><thead><tr><th>Name</th><th>Rolle</th><th>Stundenlohn</th><th>Std. Monat</th><th>Lohn Monat</th><th></th></tr></thead><tbody>';
+  if(ma.length===0){h+='<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">Keine Mitarbeiter.</td></tr>';}
+  else{ma.forEach(function(p){var std=rap.filter(function(r){return r.mitarbeiter===p.name&&r.datum&&r.datum.startsWith(mo);}).reduce(function(a,r){return a+Number(r.stunden||0);},0);h+='<tr><td><strong>'+esc(p.name)+'</strong></td><td><span class="sb s-in">'+esc(p.rolle||'-')+'</span></td><td>'+fmt.chf(p.lohn)+'/h</td><td>'+std.toFixed(1)+' h</td><td>'+fmt.chf(std*Number(p.lohn||0))+'</td><td>'+delBtn('mitarbeiter',p.id)+'</td></tr>';}); }
+  h+='</tbody></table></div>'; c.innerHTML=h;
 }
-window.MITA = {
-  openNew: function(){M.open('Mitarbeiter','<div class="frow"><div class="fg"><label class="fl2">Name</label><input class="fi2" id="mi-n" placeholder="Max Mueller"></div><div class="fg"><label class="fl2">Rolle</label><select class="fs" id="mi-r"><option>Landwirt</option><option>Saisonarbeiter</option><option>Lehrling</option><option>Aushilfe</option></select></div></div><div class="frow"><div class="fg"><label class="fl2">Stundenlohn CHF</label><input class="fi2" id="mi-l" type="number" step="0.5" placeholder="28"></div><div class="fg"><label class="fl2">AHV-Nummer</label><input class="fi2" id="mi-ahv" placeholder="756.xxxx.xxxx.xx"></div></div>','<button class="btn-sec" onclick="M.close()">Abbrechen</button><button class="btn-add" onclick="MITA.save()">Speichern</button>');},
-  save: async function(){var n=document.getElementById('mi-n').value.trim();if(!n){alert('Name erforderlich');return;}await fsSave('mitarbeiter',uid2(),{name:n,rolle:document.getElementById('mi-r').value,lohn:document.getElementById('mi-l').value,ahv:document.getElementById('mi-ahv').value});M.close();goTab('mitarbeiter');},
-  del: async function(id){if(confirm('Loeschen?')){await fsDel('mitarbeiter',id);goTab('mitarbeiter');}}
+window.MITA_openNew = function(){
+  M.open('Mitarbeiter',
+    '<div class="frow"><div class="fg"><label class="fl2">Name</label><input class="fi2" id="mi-n" placeholder="Max Mueller"></div><div class="fg"><label class="fl2">Rolle</label><select class="fs" id="mi-r"><option>Landwirt</option><option>Saisonarbeiter</option><option>Lehrling</option><option>Aushilfe</option></select></div></div>'
+    +'<div class="frow"><div class="fg"><label class="fl2">Stundenlohn CHF</label><input class="fi2" id="mi-l" type="number" step="0.5" placeholder="28"></div><div class="fg"><label class="fl2">AHV-Nummer</label><input class="fi2" id="mi-ahv" placeholder="756.xxxx.xxxx.xx"></div></div>',
+    '<button class="btn-sec" id="modal-cancel">Abbrechen</button><button class="btn-add" id="mi-save">Speichern</button>'
+  );
+  document.getElementById('modal-cancel').addEventListener('click', M.close);
+  document.getElementById('mi-save').addEventListener('click', async function(){
+    var n=document.getElementById('mi-n').value.trim();
+    if(!n){alert('Name erforderlich');return;}
+    await fsSave('mitarbeiter',uid2(),{name:n,rolle:document.getElementById('mi-r').value,lohn:document.getElementById('mi-l').value,ahv:document.getElementById('mi-ahv').value});
+    M.close(); goTab('mitarbeiter');
+  });
 };
 
-async function tabRechnungen(c) {
-  var re = await fsLoad('rechnungen');
-  var total = re.reduce(function(a,r){return a+Number(r.betrag||0);},0);
-  var html = '<div class="sec-hdr"><span class="sec-t">Rechnungen</span><button class="btn-add" onclick="RECH.openNew()">+ Neue Rechnung</button></div>';
-  html += '<div class="mgrid" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:16px"><div class="mc"><div class="ml">Total netto</div><div class="mv" style="font-size:18px">'+fmt.chf(total)+'</div></div><div class="mc"><div class="ml">MWST 2.5%</div><div class="mv" style="font-size:18px">'+fmt.chf(total*0.025)+'</div></div><div class="mc"><div class="ml">Offen</div><div class="mv md" style="font-size:18px">'+re.filter(function(r){return !r.bezahlt;}).length+'</div></div></div>';
-  html += '<div class="card" style="padding:0;overflow:hidden"><table class="dt"><thead><tr><th>Nr.</th><th>Kunde</th><th>Datum</th><th>Betrag</th><th>MWST</th><th>Total</th><th>Status</th><th></th></tr></thead><tbody>';
-  if(re.length===0){html+='<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">Keine Rechnungen.</td></tr>';}
-  else{re.sort(function(a,b){return b.datum>a.datum?1:-1;}).forEach(function(r,i){var b=Number(r.betrag||0),mwst=b*Number(r.mwstSatz||0.025);html+='<tr><td><span class="sb s-in">RE-'+String(re.length-i).padStart(3,'0')+'</span></td><td><strong>'+esc(r.kunde)+'</strong></td><td>'+fmt.date(r.datum)+'</td><td>'+fmt.chf(b)+'</td><td>'+fmt.chf(mwst)+'</td><td><strong>'+fmt.chf(b+mwst)+'</strong></td><td><span class="sb '+(r.bezahlt?'s-ok':'s-wa')+'">'+(r.bezahlt?'Bezahlt':'Offen')+'</span></td><td style="display:flex;gap:4px"><button class="btn-sec" style="padding:4px 7px;font-size:11px" onclick="RECH.toggle(''+r.id+'','+(!r.bezahlt)+')">ok</button><button class="btn-del" onclick="RECH.del(''+r.id+'')">x</button></td></tr>';});}
-  html += '</tbody></table></div>';
-  c.innerHTML = html;
+// ── RECHNUNGEN ──
+async function tabRechnungen(c){
+  var re=await fsLoad('rechnungen');
+  var total=re.reduce(function(a,r){return a+Number(r.betrag||0);},0);
+  var h='<div class="sec-hdr"><span class="sec-t">Rechnungen</span>'+addBtn('RECH_openNew','+ Neue Rechnung')+'</div>'
+    +'<div class="mgrid" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:16px">'
+    +'<div class="mc"><div class="ml">Total netto</div><div class="mv" style="font-size:18px">'+fmt.chf(total)+'</div></div>'
+    +'<div class="mc"><div class="ml">MWST 2.5%</div><div class="mv" style="font-size:18px">'+fmt.chf(total*0.025)+'</div></div>'
+    +'<div class="mc"><div class="ml">Offen</div><div class="mv md" style="font-size:18px">'+re.filter(function(r){return !r.bezahlt;}).length+'</div></div></div>'
+    +'<div class="card" style="padding:0;overflow:hidden"><table class="dt"><thead><tr><th>Nr.</th><th>Kunde</th><th>Datum</th><th>Betrag</th><th>MWST</th><th>Total</th><th>Status</th><th></th></tr></thead><tbody>';
+  if(re.length===0){h+='<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">Keine Rechnungen.</td></tr>';}
+  else{
+    re.sort(function(a,b){return b.datum>a.datum?1:-1;}).forEach(function(r,i){
+      var b=Number(r.betrag||0),mwst=b*Number(r.mwstSatz||0.025);
+      h+='<tr><td><span class="sb s-in">RE-'+String(re.length-i).padStart(3,'0')+'</span></td>'
+        +'<td><strong>'+esc(r.kunde)+'</strong></td><td>'+fmt.date(r.datum)+'</td>'
+        +'<td>'+fmt.chf(b)+'</td><td>'+fmt.chf(mwst)+'</td><td><strong>'+fmt.chf(b+mwst)+'</strong></td>'
+        +'<td><span class="sb '+(r.bezahlt?'s-ok':'s-wa')+'">'+(r.bezahlt?'Bezahlt':'Offen')+'</span></td>'
+        +'<td style="display:flex;gap:4px">'+toggleBtn('rechnungen',r.id,String(!r.bezahlt),'ok')+delBtn('rechnungen',r.id)+'</td></tr>';
+    });
+  }
+  h+='</tbody></table></div>'; c.innerHTML=h;
 }
-window.RECH = {
-  openNew: function(){M.open('Neue Rechnung','<div class="frow"><div class="fg"><label class="fl2">Kunde</label><input class="fi2" id="re-k" placeholder="Mueller GmbH"></div><div class="fg"><label class="fl2">Datum</label><input class="fi2" id="re-d" type="date" value="'+new Date().toISOString().split('T')[0]+'"></div></div><div class="frow"><div class="fg"><label class="fl2">Betrag netto CHF</label><input class="fi2" id="re-b" type="number" step="0.05" placeholder="1200.00"></div><div class="fg"><label class="fl2">MWST-Satz</label><select class="fs" id="re-mw"><option value="0.025">2.5% Nahrungsmittel</option><option value="0.077">7.7% Standard</option><option value="0">0% befreit</option></select></div></div><div class="fg"><label class="fl2">Beschreibung</label><textarea class="fta" id="re-desc" rows="2" placeholder="Lieferung Bio-Weizen..."></textarea></div>','<button class="btn-sec" onclick="M.close()">Abbrechen</button><button class="btn-add" onclick="RECH.save()">Speichern</button>');},
-  save: async function(){var k=document.getElementById('re-k').value.trim();if(!k){alert('Kunde erforderlich');return;}await fsSave('rechnungen',uid2(),{kunde:k,datum:document.getElementById('re-d').value,betrag:document.getElementById('re-b').value,mwstSatz:parseFloat(document.getElementById('re-mw').value),beschreibung:document.getElementById('re-desc').value,bezahlt:false});M.close();goTab('rechnungen');},
-  toggle: async function(id,val){var all=await fsLoad('rechnungen');var r=all.find(function(x){return x.id===id;});if(r){await fsSave('rechnungen',id,Object.assign({},r,{bezahlt:val}));goTab('rechnungen');}},
-  del: async function(id){if(confirm('Loeschen?')){await fsDel('rechnungen',id);goTab('rechnungen');}}
+window.RECH_openNew = function(){
+  M.open('Neue Rechnung',
+    '<div class="frow"><div class="fg"><label class="fl2">Kunde</label><input class="fi2" id="re-k" placeholder="Mueller GmbH"></div><div class="fg"><label class="fl2">Datum</label><input class="fi2" id="re-d" type="date" value="'+new Date().toISOString().split('T')[0]+'"></div></div>'
+    +'<div class="frow"><div class="fg"><label class="fl2">Betrag netto CHF</label><input class="fi2" id="re-b" type="number" step="0.05" placeholder="1200.00"></div><div class="fg"><label class="fl2">MWST-Satz</label><select class="fs" id="re-mw"><option value="0.025">2.5% Nahrungsmittel</option><option value="0.077">7.7% Standard</option><option value="0">0% befreit</option></select></div></div>'
+    +'<div class="fg"><label class="fl2">Beschreibung</label><textarea class="fta" id="re-desc" rows="2" placeholder="Lieferung Bio-Weizen..."></textarea></div>',
+    '<button class="btn-sec" id="modal-cancel">Abbrechen</button><button class="btn-add" id="re-save">Speichern</button>'
+  );
+  document.getElementById('modal-cancel').addEventListener('click', M.close);
+  document.getElementById('re-save').addEventListener('click', async function(){
+    var k=document.getElementById('re-k').value.trim();
+    if(!k){alert('Kunde erforderlich');return;}
+    await fsSave('rechnungen',uid2(),{kunde:k,datum:document.getElementById('re-d').value,betrag:document.getElementById('re-b').value,mwstSatz:parseFloat(document.getElementById('re-mw').value),beschreibung:document.getElementById('re-desc').value,bezahlt:false});
+    M.close(); goTab('rechnungen');
+  });
 };
 
-async function tabProdukte(c) {
-  var pr = await fsLoad('produkte');
-  var tw = pr.reduce(function(a,p){return a+(Number(p.preis||0)*Number(p.menge||0));},0);
-  var html = '<div class="sec-hdr"><span class="sec-t">Marktplatz</span><button class="btn-add" onclick="PROD.openNew()">+ Produkt</button></div>';
-  html += '<div class="mgrid" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:16px"><div class="mc"><div class="ml">Produkte</div><div class="mv">'+pr.length+'</div></div><div class="mc"><div class="ml">Warenwert</div><div class="mv" style="font-size:18px">'+fmt.chf(tw)+'</div></div><div class="mc"><div class="ml">MWST 2.5%</div><div class="mv" style="font-size:18px">'+fmt.chf(tw*0.025)+'</div></div></div>';
-  html += '<div class="card" style="padding:0;overflow:hidden"><table class="dt"><thead><tr><th>Produkt</th><th>Kategorie</th><th>Menge</th><th>Preis/Einheit</th><th>Gesamtwert</th><th>Verfuegbar bis</th><th></th></tr></thead><tbody>';
-  if(pr.length===0){html+='<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">Keine Produkte.</td></tr>';}
-  else{pr.forEach(function(p){html+='<tr><td><strong>'+esc(p.name)+'</strong></td><td>'+esc(p.kategorie||'-')+'</td><td>'+esc(p.menge||'-')+' '+esc(p.einheit||'')+'</td><td>'+fmt.chf(p.preis)+'</td><td>'+fmt.chf(Number(p.preis||0)*Number(p.menge||0))+'</td><td>'+fmt.date(p.verfBis)+'</td><td><button class="btn-del" onclick="PROD.del(''+p.id+'')">Loeschen</button></td></tr>';});}
-  html += '</tbody></table></div>';
-  c.innerHTML = html;
+// ── PRODUKTE ──
+async function tabProdukte(c){
+  var pr=await fsLoad('produkte');
+  var tw=pr.reduce(function(a,p){return a+(Number(p.preis||0)*Number(p.menge||0));},0);
+  var h='<div class="sec-hdr"><span class="sec-t">Marktplatz</span>'+addBtn('PROD_openNew','+ Produkt')+'</div>'
+    +'<div class="mgrid" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:16px">'
+    +'<div class="mc"><div class="ml">Produkte</div><div class="mv">'+pr.length+'</div></div>'
+    +'<div class="mc"><div class="ml">Warenwert</div><div class="mv" style="font-size:18px">'+fmt.chf(tw)+'</div></div>'
+    +'<div class="mc"><div class="ml">MWST 2.5%</div><div class="mv" style="font-size:18px">'+fmt.chf(tw*0.025)+'</div></div></div>'
+    +'<div class="card" style="padding:0;overflow:hidden"><table class="dt"><thead><tr><th>Produkt</th><th>Menge</th><th>Preis/Einheit</th><th>Wert</th><th>Bis</th><th></th></tr></thead><tbody>';
+  if(pr.length===0){h+='<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">Keine Produkte.</td></tr>';}
+  else{pr.forEach(function(p){h+='<tr><td><strong>'+esc(p.name)+'</strong> <span style="font-size:11px;color:var(--muted)">'+esc(p.kategorie||'')+'</span></td><td>'+esc(p.menge||'-')+' '+esc(p.einheit||'')+'</td><td>'+fmt.chf(p.preis)+'</td><td>'+fmt.chf(Number(p.preis||0)*Number(p.menge||0))+'</td><td>'+fmt.date(p.verfBis)+'</td><td>'+delBtn('produkte',p.id)+'</td></tr>';}); }
+  h+='</tbody></table></div>'; c.innerHTML=h;
 }
-window.PROD = {
-  openNew: function(){M.open('Produkt inserieren','<div class="frow"><div class="fg"><label class="fl2">Name</label><input class="fi2" id="pr-n" placeholder="Bio-Weizen"></div><div class="fg"><label class="fl2">Kategorie</label><select class="fs" id="pr-k"><option>Getreide</option><option>Gemuese</option><option>Obst</option><option>Milchprodukte</option><option>Fleisch</option><option>Eier</option></select></div></div><div class="frow"><div class="fg"><label class="fl2">Menge</label><input class="fi2" id="pr-m" type="number" placeholder="500"></div><div class="fg"><label class="fl2">Einheit</label><select class="fs" id="pr-e"><option>kg</option><option>Liter</option><option>Stueck</option><option>Tonnen</option></select></div></div><div class="frow"><div class="fg"><label class="fl2">Preis/Einheit CHF</label><input class="fi2" id="pr-p" type="number" step="0.05" placeholder="1.20"></div><div class="fg"><label class="fl2">Verfuegbar bis</label><input class="fi2" id="pr-d" type="date"></div></div>','<button class="btn-sec" onclick="M.close()">Abbrechen</button><button class="btn-add" onclick="PROD.save()">Speichern</button>');},
-  save: async function(){var n=document.getElementById('pr-n').value.trim();if(!n){alert('Name erforderlich');return;}await fsSave('produkte',uid2(),{name:n,kategorie:document.getElementById('pr-k').value,menge:document.getElementById('pr-m').value,einheit:document.getElementById('pr-e').value,preis:document.getElementById('pr-p').value,verfBis:document.getElementById('pr-d').value});M.close();goTab('produkte');},
-  del: async function(id){if(confirm('Loeschen?')){await fsDel('produkte',id);goTab('produkte');}}
+window.PROD_openNew = function(){
+  M.open('Produkt inserieren',
+    '<div class="frow"><div class="fg"><label class="fl2">Name</label><input class="fi2" id="pr-n" placeholder="Bio-Weizen"></div><div class="fg"><label class="fl2">Kategorie</label><select class="fs" id="pr-k"><option>Getreide</option><option>Gemuese</option><option>Obst</option><option>Milchprodukte</option><option>Fleisch</option><option>Eier</option></select></div></div>'
+    +'<div class="frow"><div class="fg"><label class="fl2">Menge</label><input class="fi2" id="pr-m" type="number" placeholder="500"></div><div class="fg"><label class="fl2">Einheit</label><select class="fs" id="pr-e"><option>kg</option><option>Liter</option><option>Stueck</option><option>Tonnen</option></select></div></div>'
+    +'<div class="frow"><div class="fg"><label class="fl2">Preis/Einheit CHF</label><input class="fi2" id="pr-p" type="number" step="0.05" placeholder="1.20"></div><div class="fg"><label class="fl2">Verfuegbar bis</label><input class="fi2" id="pr-d" type="date"></div></div>',
+    '<button class="btn-sec" id="modal-cancel">Abbrechen</button><button class="btn-add" id="pr-save">Speichern</button>'
+  );
+  document.getElementById('modal-cancel').addEventListener('click', M.close);
+  document.getElementById('pr-save').addEventListener('click', async function(){
+    var n=document.getElementById('pr-n').value.trim();
+    if(!n){alert('Name erforderlich');return;}
+    await fsSave('produkte',uid2(),{name:n,kategorie:document.getElementById('pr-k').value,menge:document.getElementById('pr-m').value,einheit:document.getElementById('pr-e').value,preis:document.getElementById('pr-p').value,verfBis:document.getElementById('pr-d').value});
+    M.close(); goTab('produkte');
+  });
 };
 
-async function tabBuchhaltung(c) {
-  var results = await Promise.all([fsLoad('rechnungen'),fsLoad('tagesrapporte'),fsLoad('mitarbeiter')]);
-  var re=results[0],rap=results[1],ma=results[2];
+// ── BUCHHALTUNG ──
+async function tabBuchhaltung(c){
+  var res=await Promise.all([fsLoad('rechnungen'),fsLoad('tagesrapporte'),fsLoad('mitarbeiter')]);
+  var re=res[0],rap=res[1],ma=res[2];
   var einnahmen=re.filter(function(r){return r.bezahlt;}).reduce(function(a,r){return a+Number(r.betrag||0);},0);
   var lohn=rap.reduce(function(s,x){var p=ma.find(function(m){return m.name===x.mitarbeiter;});return s+(p?Number(x.stunden||0)*Number(p.lohn||0):0);},0);
   var gewinn=einnahmen-lohn;
-  var html = '<div class="sec-hdr"><span class="sec-t">Buchhaltung '+new Date().getFullYear()+'</span></div>';
-  html += '<div class="mgrid" style="margin-bottom:18px"><div class="mc"><div class="ml">Einnahmen bezahlt</div><div class="mv mu" style="font-size:18px">'+fmt.chf(einnahmen)+'</div></div><div class="mc"><div class="ml">Lohnkosten</div><div class="mv md" style="font-size:18px">'+fmt.chf(lohn)+'</div></div><div class="mc"><div class="ml">Rohgewinn</div><div class="mv '+(gewinn>=0?'mu':'md')+'" style="font-size:18px">'+fmt.chf(gewinn)+'</div></div><div class="mc"><div class="ml">Offene Rechnungen</div><div class="mv">'+re.filter(function(r){return !r.bezahlt;}).length+'</div></div></div>';
-  html += '<div class="card"><div class="sec-hdr"><span class="sec-t">BLW Direktzahlungen Richtwerte 2026</span></div><table class="dt"><tr><td>Allg. Direktzahlungen</td><td style="text-align:right;font-weight:500">CHF 1050/ha</td></tr><tr><td>Bio-Beitrag</td><td style="text-align:right;font-weight:500">CHF 1600/ha</td></tr><tr><td>Biodiversitaet Stufe I</td><td style="text-align:right;font-weight:500">CHF 450/ha</td></tr></table><p style="font-size:10px;color:var(--hint);margin-top:8px">Richtwerte ohne Gewaehr - blw.admin.ch - Fuer Steuern Treuhander beiziehen</p></div>';
-  c.innerHTML = html;
+  c.innerHTML='<div class="sec-hdr"><span class="sec-t">Buchhaltung '+new Date().getFullYear()+'</span></div>'
+    +'<div class="mgrid" style="margin-bottom:18px">'
+    +'<div class="mc"><div class="ml">Einnahmen</div><div class="mv mu" style="font-size:18px">'+fmt.chf(einnahmen)+'</div></div>'
+    +'<div class="mc"><div class="ml">Lohnkosten</div><div class="mv md" style="font-size:18px">'+fmt.chf(lohn)+'</div></div>'
+    +'<div class="mc"><div class="ml">Rohgewinn</div><div class="mv '+(gewinn>=0?'mu':'md')+'" style="font-size:18px">'+fmt.chf(gewinn)+'</div></div>'
+    +'<div class="mc"><div class="ml">Offene Rechnungen</div><div class="mv">'+re.filter(function(r){return !r.bezahlt;}).length+'</div></div></div>'
+    +'<div class="card"><div class="sec-hdr"><span class="sec-t">BLW Direktzahlungen Richtwerte 2026</span></div>'
+    +'<table class="dt"><tr><td>Allg. Direktzahlungen</td><td style="text-align:right;font-weight:500">CHF 1050/ha</td></tr>'
+    +'<tr><td>Bio-Beitrag</td><td style="text-align:right;font-weight:500">CHF 1600/ha</td></tr>'
+    +'<tr><td>Biodiversitaet Stufe I</td><td style="text-align:right;font-weight:500">CHF 450/ha</td></tr></table>'
+    +'<p style="font-size:10px;color:var(--hint);margin-top:8px">Richtwerte ohne Gewaehr - blw.admin.ch</p></div>';
 }
 
-async function tabErinnerungen(c) {
-  var er = await fsLoad('erinnerungen');
-  var heute = new Date().toISOString().split('T')[0];
-  var offen = er.filter(function(e){return !e.erledigt;}).length;
+// ── ERINNERUNGEN ──
+async function tabErinnerungen(c){
+  var er=await fsLoad('erinnerungen');
+  var heute=new Date().toISOString().split('T')[0];
+  var offen=er.filter(function(e){return !e.erledigt;}).length;
   if(offen>0){var nb=document.getElementById('nb-er');nb.textContent=offen;nb.style.display='';}
-  var html = '<div class="sec-hdr"><span class="sec-t">Erinnerungen</span><button class="btn-add" onclick="ERIN.openNew()">+ Neue Erinnerung</button></div>';
-  html += '<div class="card" style="padding:0;overflow:hidden"><table class="dt"><thead><tr><th>Titel</th><th>Kategorie</th><th>Faellig</th><th>Status</th><th></th></tr></thead><tbody>';
-  if(er.length===0){html+='<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--muted)">Keine Erinnerungen.</td></tr>';}
-  else{er.sort(function(a,b){return a.datum>b.datum?1:-1;}).forEach(function(e){var late=e.datum&&e.datum<heute&&!e.erledigt;html+='<tr><td><strong style="'+(late?'color:var(--r600)':'')+'">'+esc(e.titel)+'</strong></td><td><span class="sb s-in">'+esc(e.kategorie||'-')+'</span></td><td style="'+(late?'color:var(--r600)':'')+'">'+fmt.date(e.datum)+(late?' !':'')+'</td><td><span class="sb '+(e.erledigt?'s-ok':'s-wa')+'">'+(e.erledigt?'Erledigt':'Offen')+'</span></td><td style="display:flex;gap:4px"><button class="btn-sec" style="padding:4px 7px;font-size:11px" onclick="ERIN.toggle(''+e.id+'','+(!e.erledigt)+')">ok</button><button class="btn-del" onclick="ERIN.del(''+e.id+'')">x</button></td></tr>';});}
-  html += '</tbody></table></div>';
-  c.innerHTML = html;
+  var h='<div class="sec-hdr"><span class="sec-t">Erinnerungen</span>'+addBtn('ERIN_openNew','+ Neue Erinnerung')+'</div>'
+    +'<div class="card" style="padding:0;overflow:hidden"><table class="dt"><thead><tr><th>Titel</th><th>Kategorie</th><th>Faellig</th><th>Status</th><th></th></tr></thead><tbody>';
+  if(er.length===0){h+='<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--muted)">Keine Erinnerungen.</td></tr>';}
+  else{
+    er.sort(function(a,b){return a.datum>b.datum?1:-1;}).forEach(function(e){
+      var late=e.datum&&e.datum<heute&&!e.erledigt;
+      h+='<tr><td><strong style="'+(late?'color:var(--r600)':'')+'">'+esc(e.titel)+'</strong></td>'
+        +'<td><span class="sb s-in">'+esc(e.kategorie||'-')+'</span></td>'
+        +'<td style="'+(late?'color:var(--r600)':'')+'">'+fmt.date(e.datum)+(late?' !!':'')+'</td>'
+        +'<td><span class="sb '+(e.erledigt?'s-ok':'s-wa')+'">'+(e.erledigt?'Erledigt':'Offen')+'</span></td>'
+        +'<td style="display:flex;gap:4px">'+toggleBtn('erinnerungen',e.id,String(!e.erledigt),'ok')+delBtn('erinnerungen',e.id)+'</td></tr>';
+    });
+  }
+  h+='</tbody></table></div>'; c.innerHTML=h;
 }
-window.ERIN = {
-  openNew: function(){M.open('Neue Erinnerung','<div class="frow"><div class="fg"><label class="fl2">Titel</label><input class="fi2" id="er-t" placeholder="Traktor Service"></div><div class="fg"><label class="fl2">Kategorie</label><select class="fs" id="er-k"><option>Wartung</option><option>Impfung</option><option>Direktzahlungen</option><option>Aussaat</option><option>Ernte</option><option>Sonstiges</option></select></div></div><div class="frow"><div class="fg"><label class="fl2">Faellig am</label><input class="fi2" id="er-d" type="date"></div><div class="fg"><label class="fl2">Notiz</label><input class="fi2" id="er-n" placeholder="Optional"></div></div>','<button class="btn-sec" onclick="M.close()">Abbrechen</button><button class="btn-add" onclick="ERIN.save()">Speichern</button>');},
-  save: async function(){var t=document.getElementById('er-t').value.trim();if(!t){alert('Titel erforderlich');return;}await fsSave('erinnerungen',uid2(),{titel:t,kategorie:document.getElementById('er-k').value,datum:document.getElementById('er-d').value,notiz:document.getElementById('er-n').value,erledigt:false});M.close();goTab('erinnerungen');},
-  toggle: async function(id,val){var all=await fsLoad('erinnerungen');var e=all.find(function(x){return x.id===id;});if(e){await fsSave('erinnerungen',id,Object.assign({},e,{erledigt:val}));goTab('erinnerungen');}},
-  del: async function(id){if(confirm('Loeschen?')){await fsDel('erinnerungen',id);goTab('erinnerungen');}}
+window.ERIN_openNew = function(){
+  M.open('Neue Erinnerung',
+    '<div class="frow"><div class="fg"><label class="fl2">Titel</label><input class="fi2" id="er-t" placeholder="Traktor Service"></div><div class="fg"><label class="fl2">Kategorie</label><select class="fs" id="er-k"><option>Wartung</option><option>Impfung</option><option>Direktzahlungen</option><option>Aussaat</option><option>Ernte</option><option>Sonstiges</option></select></div></div>'
+    +'<div class="frow"><div class="fg"><label class="fl2">Faellig am</label><input class="fi2" id="er-d" type="date"></div><div class="fg"><label class="fl2">Notiz</label><input class="fi2" id="er-n" placeholder="Optional"></div></div>',
+    '<button class="btn-sec" id="modal-cancel">Abbrechen</button><button class="btn-add" id="er-save">Speichern</button>'
+  );
+  document.getElementById('modal-cancel').addEventListener('click', M.close);
+  document.getElementById('er-save').addEventListener('click', async function(){
+    var t=document.getElementById('er-t').value.trim();
+    if(!t){alert('Titel erforderlich');return;}
+    await fsSave('erinnerungen',uid2(),{titel:t,kategorie:document.getElementById('er-k').value,datum:document.getElementById('er-d').value,notiz:document.getElementById('er-n').value,erledigt:false});
+    M.close(); goTab('erinnerungen');
+  });
 };
 
-function tabBeratung(c) {
-  var links=[{e:'🌿',t:'Strickhof',d:'Agrarbildung ZH',u:'https://www.strickhof.ch'},{e:'🐄',t:'BLV Tiergesundheit',d:'Veterinaramt',u:'https://www.blv.admin.ch'},{e:'🇨🇭',t:'BLW Direktzahlungen',d:'Anforderungen 2026',u:'https://www.blw.admin.ch'},{e:'🌱',t:'Bio Suisse',d:'Umstieg auf Bio',u:'https://www.bio-suisse.ch'},{e:'🌦',t:'MeteoSchweiz',d:'Landw. Wetterdienst',u:'https://www.meteoswiss.admin.ch'},{e:'⚖️',t:'EDOEB',d:'Datenschutz revDSG',u:'https://www.edoeb.admin.ch'}];
-  var html = '<div class="sec-hdr"><span class="sec-t">Beratung und Links</span></div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">';
-  links.forEach(function(r){html+='<div class="card" style="cursor:pointer" onclick="window.open(''+r.u+'','_blank')"><div style="font-size:26px;margin-bottom:7px">'+r.e+'</div><div style="font-size:13px;font-weight:600;margin-bottom:3px">'+r.t+'</div><div style="font-size:11px;color:var(--muted);margin-bottom:8px">'+r.d+'</div><span class="chip cb" style="font-size:10px">Website</span></div>';});
-  html += '</div>';
-  c.innerHTML = html;
+// ── BERATUNG ──
+function tabBeratung(c){
+  var links=[
+    {e:'🌿',t:'Strickhof',d:'Agrarbildung ZH',u:'https://www.strickhof.ch'},
+    {e:'🐄',t:'BLV Tiergesundheit',d:'Veterinaramt',u:'https://www.blv.admin.ch'},
+    {e:'🇨🇭',t:'BLW Direktzahlungen',d:'Anforderungen 2026',u:'https://www.blw.admin.ch'},
+    {e:'🌱',t:'Bio Suisse',d:'Umstieg auf Bio',u:'https://www.bio-suisse.ch'},
+    {e:'🌦',t:'MeteoSchweiz',d:'Landw. Wetterdienst',u:'https://www.meteoswiss.admin.ch'},
+    {e:'⚖️',t:'EDOEB',d:'Datenschutz revDSG',u:'https://www.edoeb.admin.ch'}
+  ];
+  var el=document.createElement('div');
+  el.innerHTML='<div class="sec-hdr"><span class="sec-t">Beratung und Links</span></div>';
+  var grid=document.createElement('div');
+  grid.style.cssText='display:grid;grid-template-columns:repeat(3,1fr);gap:12px';
+  links.forEach(function(r){
+    var card=document.createElement('div');
+    card.className='card';
+    card.style.cursor='pointer';
+    card.innerHTML='<div style="font-size:26px;margin-bottom:7px">'+r.e+'</div>'
+      +'<div style="font-size:13px;font-weight:600;margin-bottom:3px">'+r.t+'</div>'
+      +'<div style="font-size:11px;color:var(--muted);margin-bottom:8px">'+r.d+'</div>'
+      +'<span class="chip cb" style="font-size:10px">Website</span>';
+    card.addEventListener('click', function(){ window.open(r.u,'_blank'); });
+    grid.appendChild(card);
+  });
+  el.appendChild(grid);
+  c.innerHTML=''; c.appendChild(el);
 }
 
-function tabEinstellungen(c) {
-  c.innerHTML = '<div class="sec-hdr"><span class="sec-t">Einstellungen</span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:14px"><div class="card"><div style="font-size:14px;font-weight:600;margin-bottom:12px">Betriebsdaten</div><div class="fg"><label class="fl2">Betriebsname</label><input class="fi2" placeholder="Musterhof Mueller"></div><div class="fg"><label class="fl2">Adresse</label><input class="fi2" placeholder="Dorfstrasse 1, 8400 Winterthur"></div><div class="fg"><label class="fl2">MWST-Nummer</label><input class="fi2" placeholder="CHE-123.456.789 MWST"></div><div class="fg"><label class="fl2">TVD-Betriebsnummer</label><input class="fi2" placeholder="CH 123456789"></div><button class="btn-add" onclick="alert('Gespeichert.')">Speichern</button></div><div class="card"><div style="font-size:14px;font-weight:600;margin-bottom:12px">Wetter-Standort (Open-Meteo)</div><div class="fg"><label class="fl2">Breitengrad</label><input class="fi2" placeholder="47.45 (Kloten)"></div><div class="fg"><label class="fl2">Laengengrad</label><input class="fi2" placeholder="8.56 (Kloten)"></div><p style="font-size:11px;color:var(--muted);margin-bottom:12px">Koordinaten via swisstopo.ch - Kein API-Key noetig</p><hr style="border:none;border-top:1px solid var(--brd);margin-bottom:12px"><div style="font-size:13px;font-weight:600;margin-bottom:6px">Datenschutz revDSG</div><p style="font-size:12px;color:var(--muted)">Firebase EU - kein Datenverkauf</p></div></div><div class="card" style="margin-top:14px"><p style="font-size:12px;color:var(--muted)">LandwirtApp v2.0 - ZeroGen Kloten ZH - MWST-konform - revDSG/EU-DSGVO</p></div>';
+// ── EINSTELLUNGEN ──
+function tabEinstellungen(c){
+  c.innerHTML='<div class="sec-hdr"><span class="sec-t">Einstellungen</span></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'
+    +'<div class="card"><div style="font-size:14px;font-weight:600;margin-bottom:12px">Betriebsdaten</div>'
+    +'<div class="fg"><label class="fl2">Betriebsname</label><input class="fi2" placeholder="Musterhof Mueller"></div>'
+    +'<div class="fg"><label class="fl2">Adresse</label><input class="fi2" placeholder="Dorfstrasse 1, 8400 Winterthur"></div>'
+    +'<div class="fg"><label class="fl2">MWST-Nummer</label><input class="fi2" placeholder="CHE-123.456.789 MWST"></div>'
+    +'<div class="fg"><label class="fl2">TVD-Betriebsnummer</label><input class="fi2" placeholder="CH 123456789"></div>'
+    +'<button class="btn-add" id="btn-einst-save">Speichern</button></div>'
+    +'<div class="card"><div style="font-size:14px;font-weight:600;margin-bottom:12px">Wetter-Standort</div>'
+    +'<div class="fg"><label class="fl2">Breitengrad</label><input class="fi2" placeholder="47.45 (Kloten)"></div>'
+    +'<div class="fg"><label class="fl2">Laengengrad</label><input class="fi2" placeholder="8.56 (Kloten)"></div>'
+    +'<p style="font-size:11px;color:var(--muted)">Open-Meteo - kostenlos, kein API-Key</p></div></div>'
+    +'<div class="card" style="margin-top:14px"><p style="font-size:12px;color:var(--muted)">LandwirtApp v2.0 - ZeroGen Kloten ZH - MWST-konform - revDSG</p></div>';
+  document.getElementById('btn-einst-save').addEventListener('click', function(){ alert('Gespeichert.'); });
 }
 
 })();
@@ -597,12 +839,12 @@ import { getFirestore, collection, doc, setDoc, getDocs, deleteDoc, serverTimest
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDXrzMj_DWzt8nY00DuKUo9IeMSBhcjjiE",
-  authDomain: "landwirt-app.firebaseapp.com",
-  projectId: "landwirt-app",
-  storageBucket: "landwirt-app.firebasestorage.app",
-  messagingSenderId: "1001271736667",
-  appId: "1:1001271736667:web:9543d71108c43f2ecdc27e"
+  apiKey:            "DEIN_API_KEY",
+  authDomain:        "DEIN_PROJECT.firebaseapp.com",
+  projectId:         "DEIN_PROJECT_ID",
+  storageBucket:     "DEIN_PROJECT.appspot.com",
+  messagingSenderId: "DEIN_SENDER_ID",
+  appId:             "DEINE_APP_ID"
 };
 
 const app  = initializeApp(firebaseConfig);
@@ -625,7 +867,9 @@ document.getElementById('btn-login').addEventListener('click', async () => {
     await signInWithEmailAndPassword(auth, email, pw);
   } catch(e) {
     el.style.display = 'block';
-    el.textContent = e.code === 'auth/invalid-credential' ? 'E-Mail oder Passwort falsch.' : 'Fehler: ' + e.message;
+    el.textContent = e.code === 'auth/invalid-credential'
+      ? 'E-Mail oder Passwort falsch.'
+      : 'Fehler: ' + e.message;
   }
 });
 
